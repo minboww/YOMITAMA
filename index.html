@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ヨミタマ</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sawarabi+Mincho&display=swap" rel="stylesheet">
+
+    <!-- ★修正: Firebase SDKは互換バージョンのみ読み込む -->
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        /* CSSは変更ありません */
+        :root {
+            --font-serif: 'Sawarabi Mincho', "游明朝", YuMincho, serif;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --bg-color: #f7f6f2;
+            --base-text-color: #3a3a3a;
+            --primary-color: #556b2f;
+            --secondary-color: #b22222;
+            --white-color: #ffffff;
+            --light-gray-color: #e0e0e0;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --overlay-color: rgba(0, 0, 0, 0.6);
+        }
+        html, body { height: 100%; margin: 0; padding: 0; font-family: var(--font-serif); background-color: var(--bg-color); color: var(--base-text-color); }
+        #map { width: 100%; height: 100%; }
+        .float-button { position: fixed; bottom: 30px; width: 80px; height: 80px; color: var(--white-color); border-radius: 50%; border: 2px solid var(--white-color); box-shadow: 0 4px 12px var(--shadow-color); font-size: 26px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; z-index: 1000; }
+        .float-button:hover { transform: scale(1.05) translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15); }
+        #yomuButton { right: 20px; background-color: var(--primary-color); }
+        #kigoButton { left: 20px; background-color: var(--secondary-color); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--overlay-color); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; padding: 0 15px; box-sizing: border-box; }
+        .modal-overlay.is-visible { opacity: 1; visibility: visible; }
+        .modal-content { background-color: var(--bg-color); padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.2); transform: translateY(20px); transition: transform 0.3s ease-out; }
+        .modal-overlay.is-visible .modal-content { transform: translateY(0); }
+        .modal-content h2 { margin-top: 0; font-size: 24px; color: var(--base-text-color); }
+        .haiku-input-container { display: flex; justify-content: center; gap: 15px; margin: 25px 0; }
+        .haiku-input-area { writing-mode: vertical-rl; text-orientation: upright; height: 160px; width: 45px; padding: 12px; font-size: 18px; font-family: inherit; border: 1px solid var(--light-gray-color); border-radius: 6px; resize: none; white-space: pre; overflow: hidden; background-color: var(--white-color); transition: border-color 0.2s, box-shadow 0.2s; }
+        .haiku-input-area:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(85, 107, 47, 0.2); }
+        .haiku-input-area::placeholder { color: #aaa; opacity: 1; }
+        #kigoListContainer { max-height: 60vh; overflow-y: auto; text-align: left; margin-top: 20px; }
+        .season-section h3 { margin: 0 0 15px 0; padding-bottom: 8px; font-size: 18px; color: var(--base-text-color); border-bottom: 2px solid var(--secondary-color); font-family: var(--font-sans); font-weight: bold; }
+        .season-section ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+        .season-section li { background-color: var(--white-color); padding: 6px 14px; border: 1px solid var(--light-gray-color); border-radius: 20px; font-size: 16px; font-family: var(--font-sans); cursor: default; transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s; }
+        .season-section li:hover { transform: translateY(-2px); box-shadow: 0 4px 8px var(--shadow-color); background-color: #fffaf0; border-color: var(--secondary-color); }
+        .modal-buttons { margin-top: 25px; }
+        .modal-buttons button { padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; border: none; font-family: var(--font-sans); font-weight: bold; transition: opacity 0.2s; }
+        .modal-buttons button:hover { opacity: 0.85; }
+        .submit-haiku-button { background-color: var(--primary-color); color: white; margin-right: 10px; }
+        .cancel-button { background-color: #d0d0d0; color: #555; }
+        .haiku-label { background-color: rgba(255, 255, 255, 0.75); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); border: 1px solid rgba(85, 107, 47, 0.7); border-radius: 5px; padding: 10px 6px; box-shadow: 0 2px 5px var(--shadow-color); }
+        .haiku-label > div { writing-mode: vertical-rl; text-orientation: mixed; white-space: nowrap; font-size: 15px; font-weight: bold; color: var(--base-text-color); letter-spacing: 0.1em; line-height: 1.6; }
+        .popup-content-wrapper { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .popup-tategaki { writing-mode: vertical-rl; text-orientation: mixed; padding: 10px; font-size: 17px; letter-spacing: 0.2em; line-height: 2; white-space: nowrap; }
+        .popup-actions { writing-mode: horizontal-tb; display: flex; align-items: center; gap: 10px; padding: 5px; }
+        .like-button { background-color: #ffefff; border: 1px solid #e1bee7; color: #8e24aa; padding: 5px 12px; border-radius: 15px; cursor: pointer; font-family: var(--font-sans); font-size: 14px; transition: background-color 0.2s; }
+        .like-button:hover { background-color: #f3e5f5; }
+        .like-count { font-family: var(--font-sans); font-weight: bold; font-size: 16px; color: #6a6a6a; }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+    <div class="float-button" id="kigoButton">季語</div>
+    <div class="float-button" id="yomuButton">詠む</div>
+
+    <!-- モーダルのHTML部分は変更ありません -->
+    <div class="modal-overlay" id="haikuModal">
+        <div class="modal-content">
+            <h2>一句、詠む</h2>
+            <div class="haiku-input-container">
+                <textarea class="haiku-input-area" id="shimoNoKuInput" placeholder="下 の 句" maxlength="10"></textarea>
+                <textarea class="haiku-input-area" id="nakaNoKuInput" placeholder="中 の 句" maxlength="10"></textarea>
+                <textarea class="haiku-input-area" id="kamiNoKuInput" placeholder="上 の 句" maxlength="10"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="submit-haiku-button" id="submitHaiku">投稿</button>
+                <button type="button" class="cancel-button" id="cancelHaiku">取消</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="kigoModal">
+        <div class="modal-content">
+            <h2 id="kigoModalTitle">今の季語</h2>
+            <div id="kigoListContainer"></div>
+            <div class="modal-buttons">
+                <button type="button" class="cancel-button" id="closeKigoModal">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ★修正: この<script>ブロックに必要な情報をまとめる -->
+    <script>
+        // あなたのウェブアプリのFirebase設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyAHJZka9pXIl4LUo_Xtt1S7aINMJVDVDb0", // あなたのAPIキー
+            authDomain: "yomitama-6cb84.firebaseapp.com",
+            projectId: "yomitama-6cb84",
+            storageBucket: "yomitama-6cb84.appspot.com", // ドメイン名を修正
+            messagingSenderId: "812764737990",
+            appId: "1:812764737990:web:a88d864b7e4c130c3542c7"
+            // measurementIdは互換バージョンでは不要なことが多いので削除
+        };
+        
+        // Firebaseを初期化
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore(); // Firestoreのインスタンスを取得
+    </script>
+    
+    <script>
+        // この下のアプリケーションコードは変更ありません
+        document.addEventListener('DOMContentLoaded', () => {
+            const mapElement = document.getElementById('map');
+            const yomuButton = document.getElementById('yomuButton');
+            const kigoButton = document.getElementById('kigoButton');
+            const haikuModal = document.getElementById('haikuModal');
+            const kigoModal = document.getElementById('kigoModal');
+            const kigoModalTitle = document.getElementById('kigoModalTitle');
+            const kamiNoKuInput = document.getElementById('kamiNoKuInput');
+            const nakaNoKuInput = document.getElementById('nakaNoKuInput');
+            const shimoNoKuInput = document.getElementById('shimoNoKuInput');
+            const submitHaikuButton = document.getElementById('submitHaiku');
+            const cancelHaikuButton = document.getElementById('cancelHaiku');
+            const closeKigoModalButton = document.getElementById('closeKigoModal');
+            const kigoListContainer = document.getElementById('kigoListContainer');
+
+            const kigoData = { '春': ['桜', '蛙', '燕', '春風', 'うぐいす', '朧月', '菜の花', '蝶', '汐干潟', '猫の恋'], '夏': ['紫陽花', '蛍', '風鈴', '天の川', '蝉', '涼し', '向日葵', '夕立', 'ビール', '白夜'], '秋': ['紅葉', '月', '鈴虫', '秋風', '稲妻', '鰯雲', '秋桜', '案山子', '新米', 'きのこ'], '冬': ['雪', '水仙', '寒椿', '冬空', 'ふぐ', '息白し', '焚火', 'クリスマス', 'おでん', '襟巻'] };
+            const getCurrentSeasonName = () => { const month = new Date().getMonth(); if (month >= 2 && month <= 4) return '春'; if (month >= 5 && month <= 7) return '夏'; if (month >= 8 && month <= 10) return '秋'; return '冬'; };
+            const openModal = (modal) => modal.classList.add('is-visible');
+            const closeModal = (modal) => modal.classList.remove('is-visible');
+            const clearHaikuInputs = () => { kamiNoKuInput.value = ""; nakaNoKuInput.value = ""; shimoNoKuInput.value = ""; };
+
+            const map = L.map(mapElement, { zoomControl: false }).setView([35.6812, 139.7671], 13);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>' }).addTo(map);
+
+            let currentUserPosition = null;
+            map.locate({setView: true, maxZoom: 16, watch: true});
+            map.on('locationfound', (e) => { currentUserPosition = e.latlng; });
+            map.on('locationerror', (e) => { alert("位置情報の取得に失敗しました。"); });
+            
+            function addHaikuToMap(haikuData) {
+                const { id, kami, naka, shimo, latlng, likes } = haikuData;
+                const haikuIcon = L.divIcon({ className: 'haiku-label', html: `<div>${kami}</div>`, iconSize: [null, null] });
+                
+                const popupContent = `
+                    <div class="popup-content-wrapper" data-id="${id}">
+                        <div class="popup-tategaki">${kami}&nbsp;&nbsp;${naka}&nbsp;&nbsp;${shimo}</div>
+                        <div class="popup-actions">
+                            <button class="like-button">いいね ❤️</button>
+                            <span class="like-count">${likes}</span>
+                        </div>
+                    </div>
+                `;
+                
+                const marker = L.marker([latlng.lat, latlng.lng], {icon: haikuIcon}).addTo(map).bindPopup(popupContent, { minWidth: 20 });
+                marker.haikuId = id; 
+            }
+            
+            db.collection("haiku").orderBy("createdAt", "asc").onSnapshot((querySnapshot) => {
+                querySnapshot.docChanges().forEach((change) => {
+                    if (change.type === "added") {
+                        const data = change.doc.data();
+                        const haikuData = { id: change.doc.id, kami: data.kami, naka: data.naka, shimo: data.shimo, latlng: data.latlng, likes: data.likes };
+                        addHaikuToMap(haikuData);
+                    }
+                });
+            });
+
+            submitHaikuButton.addEventListener('click', () => {
+                const kamiNoKu = kamiNoKuInput.value.trim();
+                const nakaNoKu = nakaNoKuInput.value.trim();
+                const shimoNoKu = shimoNoKuInput.value.trim();
+
+                if (!currentUserPosition || kamiNoKu === "" || nakaNoKu === "" || shimoNoKu === "") {
+                    alert("すべての句を入力し、現在地が取得できるのを待ってください。");
+                    return;
+                }
+                
+                db.collection("haiku").add({
+                    kami: kamiNoKu,
+                    naka: nakaNoKu,
+                    shimo: shimoNoKu,
+                    latlng: { lat: currentUserPosition.lat, lng: currentUserPosition.lng },
+                    likes: 0,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    closeModal(haikuModal);
+                    setTimeout(clearHaikuInputs, 300);
+                }).catch((error) => {
+                    console.error("Error writing document: ", error);
+                    alert("投稿に失敗しました。");
+                });
+            });
+
+            map.on('popupopen', (e) => {
+                const popupEl = e.popup.getElement();
+                const likeButton = popupEl.querySelector('.like-button');
+                const likeCountSpan = popupEl.querySelector('.like-count');
+                const marker = e.popup._source;
+
+                if (likeButton && !likeButton._hasListener) {
+                    likeButton.addEventListener('click', () => {
+                        const docRef = db.collection("haiku").doc(marker.haikuId);
+                        db.runTransaction((transaction) => {
+                            return transaction.get(docRef).then((doc) => {
+                                if (!doc.exists) { throw "Document does not exist!"; }
+                                const newLikes = (doc.data().likes || 0) + 1;
+                                transaction.update(docRef, { likes: newLikes });
+                                return newLikes;
+                            });
+                        }).then((newLikes) => {
+                            likeCountSpan.textContent = newLikes;
+                        }).catch((error) => {
+                            console.error("Transaction failed: ", error);
+                        });
+                    });
+                    likeButton._hasListener = true;
+                }
+            });
+
+            yomuButton.addEventListener('click', () => { if (!currentUserPosition) { alert("現在地が特定できていません。"); return; } openModal(haikuModal); });
+            kigoButton.addEventListener('click', () => { const seasonName = getCurrentSeasonName(); const words = kigoData[seasonName]; kigoListContainer.innerHTML = ''; const ul = document.createElement('ul'); words.forEach(word => { const li = document.createElement('li'); li.textContent = word; ul.appendChild(li); }); kigoListContainer.appendChild(ul); kigoModalTitle.textContent = `${seasonName}の季語`; openModal(kigoModal); });
+            cancelHaikuButton.addEventListener('click', () => { closeModal(haikuModal); setTimeout(clearHaikuInputs, 300); });
+            closeKigoModalButton.addEventListener('click', () => { closeModal(kigoModal); });
+            [haikuModal, kigoModal].forEach(modal => { modal.addEventListener('click', (e) => { if (e.target === modal) { closeModal(modal); if(modal === haikuModal) setTimeout(clearHaikuInputs, 300); } }); });
+        });
+    </script>
+</body>
+</html>
