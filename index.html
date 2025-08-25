@@ -39,20 +39,58 @@
         
         .haiku-marker { cursor: pointer; transition: transform 0.2s ease-out; position: relative; }
         .haiku-marker:hover { transform: scale(1.05); z-index: 1000 !important; }
-        .haiku-marker-body { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background-color: rgba(255, 255, 255, 0.9); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); border: 1px solid rgba(85, 107, 47, 0.7); border-radius: 8px; padding: 10px 8px; box-shadow: 0 3px 8px var(--shadow-color); display: flex; align-items: flex-start; transition: padding 0.3s ease-in-out; }
+        
+        .haiku-marker-body {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(85, 107, 47, 0.7);
+            border-radius: 8px;
+            padding: 10px 6px; /* ★修正: 左右の余白を狭くしました */
+            box-shadow: 0 3px 8px var(--shadow-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            transition: padding 0.3s ease-in-out;
+        }
+
         .leaflet-div-icon { background: none; border: none; }
         .haiku-marker-body::after { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 10px solid rgba(85, 107, 47, 0.7); }
         .haiku-tategaki { writing-mode: vertical-rl; text-orientation: mixed; white-space: nowrap; font-size: 16px; font-weight: bold; color: var(--base-text-color); letter-spacing: 0.1em; line-height: 1.7; transition: all 0.3s ease-in-out; }
         .naka-shimo-wrapper { display: inline-block; max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out 0.1s; margin: 0; padding: 0; }
         .kami, .naka, .shimo { display: inline-block; }
         .naka { margin-right: 0.8em; }
-        .haiku-actions { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; margin-left: 10px; max-width: 0; opacity: 0; overflow: hidden; transition: max-width 0.3s ease-in-out, opacity 0.2s ease-in-out 0.1s; }
+        
+        .haiku-actions {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out 0.1s;
+        }
+        
         .like-button { background-color: #ffefff; border: 1px solid #e1bee7; color: #8e24aa; padding: 5px 10px; border-radius: 15px; cursor: pointer; font-family: var(--font-sans); font-size: 14px; transition: background-color 0.2s; white-space: nowrap; }
         .like-button.liked, .like-button:disabled { background-color: #e1bee7; color: white; cursor: not-allowed; }
         .like-count { font-family: var(--font-sans); font-weight: bold; font-size: 16px; color: #6a6a6a; }
-        .haiku-marker.expanded .haiku-marker-body { padding: 12px 15px; }
+        
+        .haiku-marker.expanded .haiku-marker-body {
+             padding: 12px 10px; /* ★修正: 展開時も同様に調整 */
+        }
         .haiku-marker.expanded .naka-shimo-wrapper { max-height: 20em; opacity: 1; }
-        .haiku-marker.expanded .haiku-actions { max-width: 100px; opacity: 1; }
+        
+        .haiku-marker.expanded .haiku-actions {
+            max-height: 50px;
+            opacity: 1;
+        }
         
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--overlay-color); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; padding: 0 15px; box-sizing: border-box; }
         .modal-overlay.is-visible { opacity: 1; visibility: visible; }
@@ -141,7 +179,7 @@
                 const { id, kami, naka, shimo, latlng, likes } = haikuData;
                 
                 const tailHeight = 10;
-                const iconHtml = `<div class="haiku-marker-body"><div class="haiku-tategaki"><span class="kami">${kami}</span><span class="naka-shimo-wrapper"><span class="naka">${naka}</span><span class="shimo">${shimo}</span></span></div><div class="haiku-actions"><button class="like-button" data-id="${id}">いいね</button><span class="like-count">${likes}</span></div></div>`;
+                const iconHtml = `<div class="haiku-marker-body"><div class="haiku-tategaki"><span class="kami">${kami}</span><span class="naka-shimo-wrapper"><span class="naka">${naka}</span><span class="shimo">${shimo}</span></span></div><div class="haiku-actions"><button class="like-button" data-id="${id}">をかし</button><span class="like-count">${likes}</span></div></div>`;
 
                 const initialHtmlForSizing = `<div class="haiku-marker-body"><div class="haiku-tategaki"><span class="kami">${kami}</span></div></div>`;
                 const contentSize = getElementSize(initialHtmlForSizing, '');
@@ -177,7 +215,6 @@
 
                 marker.on('add', () => {
                     const el = marker.getElement();
-                    // ★修正: いいねボタンが押せるように、マーカー内のクリックイベントが地図に伝播しないようにする
                     L.DomEvent.disableClickPropagation(el);
 
                     const likeButton = el.querySelector('.like-button');
@@ -190,7 +227,6 @@
                     }
 
                     likeButton.addEventListener('click', (e) => {
-                        // stopPropagationは念のため残しておきます
                         L.DomEvent.stopPropagation(e);
                         if (isHaikuLiked(id)) return;
 
@@ -282,7 +318,6 @@
 
             yomuButton.addEventListener('click', () => { if (!currentUserPosition) { alert("現在地が特定できていません。"); return; } openModal(haikuModal); });
 
-            // ★修正: 季語ボタンの処理を実装
             kigoButton.addEventListener('click', () => {
                 const kigoData = { 1: ["正月", "初詣", "寒椿"], 2: ["梅", "春一番", "立春"], 3: ["雛祭り", "蝶", "春分"], 4: ["花見", "桜", "燕"], 5: ["鯉のぼり", "新緑", "田植え"], 6: ["梅雨", "紫陽花", "蛍"], 7: ["七夕", "風鈴", "蝉"], 8: ["盆", "向日葵", "雷"], 9: ["月見", "鈴虫", "台風"], 10: ["紅葉", "秋祭り", "運動会"], 11: ["七五三", "木枯らし", "焚き火"], 12: ["クリスマス", "大晦日", "雪"] };
                 const kigoModalTitle = document.getElementById('kigoModalTitle');
