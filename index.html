@@ -37,14 +37,20 @@
         #kigoButton { left: 20px; background-color: var(--secondary-color); }
         #listButton { right: 20px; bottom: 120px; width: 60px; height: 60px; font-size: 20px; background-color: var(--tertiary-color); }
         
-        /* ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ ここから修正 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ */
         
         /* マーカー全体のコンテナ */
         .haiku-marker {
             cursor: pointer;
             transition: transform 0.2s ease-out;
+            /* ★★★★★★★★★★★★★★★★★★★ 修正点 1/2 ★★★★★★★★★★★★★★★★★★★ */
+            /* Flexboxを有効にし、中身を下端に揃えることで「上に伸びる」挙動を実現 */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            /* ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★ */
         }
-        .haiku-marker:hover {
+        .haiku-marker:hover .haiku-marker-body { /* ★修正: ホバー対象を本体に限定 */
             transform: scale(1.05);
             z-index: 1000 !important; /* ホバー時に最前面に */
         }
@@ -59,8 +65,8 @@
             padding: 10px 8px;
             box-shadow: 0 3px 8px var(--shadow-color);
             display: flex;
-            align-items: flex-start; /* ★修正: 上揃えに変更 */
-            transition: padding 0.3s ease-in-out;
+            align-items: flex-start;
+            transition: padding 0.3s ease-in-out, transform 0.2s ease-out; /* ★修正: transformもtransition対象に */
         }
         /* 吹き出しのしっぽ */
         .haiku-marker-body::after {
@@ -90,16 +96,15 @@
         /* 中の句と下の句を囲むラッパー（初期状態は非表示） */
         .naka-shimo-wrapper {
             display: inline-block;
-            max-height: 0; /* ★修正: max-widthからmax-heightに変更し、高さを0にする */
+            max-height: 0;
             opacity: 0;
             overflow: hidden;
-            /* ★修正: transitionの対象をmax-heightに変更 */
             transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out 0.1s;
             margin: 0;
             padding: 0;
         }
         .kami, .naka, .shimo { display: inline-block; }
-        .naka { margin-right: 0.8em; } /* 中の句と下の句の間のスペース */
+        .naka { margin-right: 0.8em; }
 
         /* いいねボタン等のアクションエリア（初期状態は非表示） */
         .haiku-actions {
@@ -123,15 +128,13 @@
             padding: 12px 15px;
         }
         .haiku-marker.expanded .naka-shimo-wrapper {
-            max-height: 20em; /* ★修正: 十分な高さを与える */
+            max-height: 20em;
             opacity: 1;
         }
         .haiku-marker.expanded .haiku-actions {
-            max-width: 100px; /* こちらは変更なし */
+            max-width: 100px;
             opacity: 1;
         }
-
-        /* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 修正はここまで ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */
 
         /* 以下、モーダルや一覧のスタイルは変更なし */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--overlay-color); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; padding: 0 15px; box-sizing: border-box; }
