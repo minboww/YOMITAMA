@@ -179,7 +179,7 @@
                 const { id, kami, naka, shimo, latlng, likes } = haikuData;
                 
                 const tailHeight = 10;
-                const iconHtml = `<div class="haiku-marker-body"><div class="haiku-tategaki"><span class="kami">${kami}</span><span class="naka-shimo-wrapper"><span class="naka">${naka}</span><span class="shimo">${shimo}</span></span></div><div class="haiku-actions"><button class="like-button" data-id="${id}">をかし</button><span class="like-count">${likes}</span></div></div>`;
+                const iconHtml = `<div class="haiku-marker-body"><div class="haiku-tategaki"><span class="kami">${kami}</span><span class="naka-shimo-wrapper"><span class="naka">${naka}</span><span class="shimo">${shimo}</span></span></div><div class="haiku-actions"><button class="like-button" data-id="${id}">❤</button><span class="like-count">${likes}</span></div></div>`;
 
                 const initialHtmlForSizing = `<div class="haiku-marker-body"><div class="haiku-tategaki"><span class="kami">${kami}</span></div></div>`;
                 const contentSize = getElementSize(initialHtmlForSizing, '');
