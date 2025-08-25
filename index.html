@@ -37,7 +37,8 @@
         #kigoButton { left: 20px; background-color: var(--secondary-color); }
         #listButton { right: 20px; bottom: 120px; width: 60px; height: 60px; font-size: 20px; background-color: var(--tertiary-color); }
         
-        /* ★修正: ポップアップ関連のCSSを削除し、新しいマーカーのスタイルを定義 */
+        /* ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ ここから修正 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ */
+        
         /* マーカー全体のコンテナ */
         .haiku-marker {
             cursor: pointer;
@@ -58,7 +59,7 @@
             padding: 10px 8px;
             box-shadow: 0 3px 8px var(--shadow-color);
             display: flex;
-            align-items: center;
+            align-items: flex-start; /* ★修正: 上揃えに変更 */
             transition: padding 0.3s ease-in-out;
         }
         /* 吹き出しのしっぽ */
@@ -89,10 +90,11 @@
         /* 中の句と下の句を囲むラッパー（初期状態は非表示） */
         .naka-shimo-wrapper {
             display: inline-block;
-            max-width: 0; /* JSでアニメーションさせるため幅を0に */
+            max-height: 0; /* ★修正: max-widthからmax-heightに変更し、高さを0にする */
             opacity: 0;
             overflow: hidden;
-            transition: max-width 0.3s ease-in-out, opacity 0.2s ease-in-out;
+            /* ★修正: transitionの対象をmax-heightに変更 */
+            transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out 0.1s;
             margin: 0;
             padding: 0;
         }
@@ -110,7 +112,7 @@
             max-width: 0;
             opacity: 0;
             overflow: hidden;
-            transition: max-width 0.3s ease-in-out, opacity 0.2s ease-in-out;
+            transition: max-width 0.3s ease-in-out, opacity 0.2s ease-in-out 0.1s;
         }
         .like-button { background-color: #ffefff; border: 1px solid #e1bee7; color: #8e24aa; padding: 5px 10px; border-radius: 15px; cursor: pointer; font-family: var(--font-sans); font-size: 14px; transition: background-color 0.2s; white-space: nowrap; }
         .like-button.liked, .like-button:disabled { background-color: #e1bee7; color: white; cursor: not-allowed; }
@@ -120,11 +122,16 @@
         .haiku-marker.expanded .haiku-marker-body {
             padding: 12px 15px;
         }
-        .haiku-marker.expanded .naka-shimo-wrapper,
-        .haiku-marker.expanded .haiku-actions {
-            max-width: 100px; /* 十分な幅を与える */
+        .haiku-marker.expanded .naka-shimo-wrapper {
+            max-height: 20em; /* ★修正: 十分な高さを与える */
             opacity: 1;
         }
+        .haiku-marker.expanded .haiku-actions {
+            max-width: 100px; /* こちらは変更なし */
+            opacity: 1;
+        }
+
+        /* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 修正はここまで ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */
 
         /* 以下、モーダルや一覧のスタイルは変更なし */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--overlay-color); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; padding: 0 15px; box-sizing: border-box; }
@@ -184,7 +191,7 @@
             let currentUserPosition = null;
             let allHaikuData = [];
             let haikuMarkers = {};
-            let expandedMarker = null; // ★修正: 現在拡大中のマーカーを管理
+            let expandedMarker = null;
 
             const openModal = (modal) => modal.classList.add('is-visible');
             const closeModal = (modal) => modal.classList.remove('is-visible');
@@ -210,12 +217,10 @@
                 return size;
             };
 
-            // ★修正: 俳句を地図に追加する関数を全面的に刷新
             function addHaikuToMap(haikuData) {
                 const { id, kami, naka, shimo, latlng, likes } = haikuData;
                 
                 const tailHeight = 10;
-                // 全ての句とアクションを含む完全なHTMLを生成
                 const iconHtml = `
                     <div class="haiku-marker-body">
                         <div class="haiku-tategaki">
@@ -231,7 +236,6 @@
                         </div>
                     </div>`;
 
-                // 初期状態（上の句のみ）のサイズを計測
                 const initialHtmlForSizing = `<div class="haiku-marker-body"><div class="haiku-tategaki"><span class="kami">${kami}</span></div></div>`;
                 const contentSize = getElementSize(initialHtmlForSizing, '');
 
@@ -239,9 +243,9 @@
                 const iconTotalHeight = contentSize.height + tailHeight;
 
                 const haikuIcon = L.divIcon({
-                    className: 'haiku-marker', // 親コンテナのクラス
+                    className: 'haiku-marker',
                     html: iconHtml,
-                    iconSize: null, // CSSでサイズを制御するためnullに
+                    iconSize: null,
                     iconAnchor: [iconWidth / 2, iconTotalHeight],
                 });
                 
@@ -249,7 +253,6 @@
                 marker.haikuId = id;
                 haikuMarkers[id] = marker;
 
-                // マーカーがクリックされた時の拡大・縮小処理
                 marker.on('click', (e) => {
                     L.DomEvent.stopPropagation(e);
                     if (expandedMarker && expandedMarker !== marker) {
@@ -265,13 +268,11 @@
                     }
                 });
 
-                // マーカーがDOMに追加された後で、いいねボタンの処理を設定
                 marker.on('add', () => {
                     const el = marker.getElement();
                     const likeButton = el.querySelector('.like-button');
                     const likeCountSpan = el.querySelector('.like-count');
                     
-                    // いいね済みかチェックしてボタンの状態を初期化
                     if (isHaikuLiked(id)) {
                         likeButton.classList.add('liked');
                         likeButton.disabled = true;
@@ -279,7 +280,7 @@
                     }
 
                     likeButton.addEventListener('click', (e) => {
-                        L.DomEvent.stopPropagation(e); // 親のマーカークリックを抑制
+                        L.DomEvent.stopPropagation(e);
                         if (isHaikuLiked(id)) return;
 
                         const docRef = db.collection("haiku").doc(id);
@@ -301,7 +302,6 @@
                 });
             }
             
-            // ★修正: 地図クリックで開いているマーカーを閉じる
             map.on('click', () => {
                 if (expandedMarker) {
                     expandedMarker.getElement().classList.remove('expanded');
@@ -319,7 +319,6 @@
                         addHaikuToMap(haikuData);
                         allHaikuData.push(haikuData);
                     }
-                    // ★修正: いいね数更新時に表示中のマーカーも更新
                     if (change.type === "modified") {
                         const marker = haikuMarkers[doc.id];
                         if (marker) {
@@ -343,8 +342,6 @@
                     kami: kamiNoKu, naka: nakaNoKu, shimo: shimoNoKu, latlng: { lat: currentUserPosition.lat, lng: currentUserPosition.lng }, likes: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 }).then(() => { closeModal(haikuModal); setTimeout(clearHaikuInputs, 300); }).catch((error) => { console.error("Error writing document: ", error); alert("投稿に失敗しました。"); });
             });
-
-            // ★修正: popupopenイベントは使わなくなったので削除
             
             listButton.addEventListener('click', () => {
                 if (!currentUserPosition) { alert("現在地が特定できていません。"); return; }
@@ -364,7 +361,6 @@
                         if (marker) {
                             closeModal(listModal);
                             map.setView(marker.getLatLng(), 16);
-                            // ★修正: クリックイベントを擬似的に発火させて拡大表示
                             marker.fire('click');
                         }
                     });
@@ -373,7 +369,6 @@
                 openModal(listModal);
             });
 
-            // その他のイベントリスナー
             yomuButton.addEventListener('click', () => { if (!currentUserPosition) { alert("現在地が特定できていません。"); return; } openModal(haikuModal); });
             kigoButton.addEventListener('click', () => { /* 変更なし */ });
             cancelHaikuButton.addEventListener('click', () => { closeModal(haikuModal); setTimeout(clearHaikuInputs, 300); });
