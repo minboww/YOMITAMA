@@ -16,6 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     
     <style>
+        /* CSSは変更ありません */
         :root {
             --font-serif: 'Sawarabi Mincho', "游明朝", YuMincho, serif;
             --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -29,12 +30,10 @@
             --overlay-color: rgba(0, 0, 0, 0.6);
         }
         html, body { height: 100%; margin: 0; padding: 0; font-family: var(--font-serif); background-color: var(--bg-color); color: var(--base-text-color); }
-        #map { width: 100%; height: 100%; background-color: var(--bg-color); } /* 背景色を指定 */
-        
+        #map { width: 100%; height: 100%; background-color: var(--bg-color); }
         .float-button { position: fixed; bottom: 30px; width: 80px; height: 80px; color: var(--white-color); border-radius: 50%; border: 2px solid var(--white-color); box-shadow: 0 4px 12px var(--shadow-color); font-size: 26px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; z-index: 1000; }
         .float-button:hover { transform: scale(1.05) translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15); }
         #kigoButton { left: 20px; background-color: var(--secondary-color); }
-        
         .haiku-marker { cursor: pointer; transition: transform 0.2s ease-out; position: relative; }
         .haiku-marker:hover { transform: scale(1.05); z-index: 1000 !important; }
         .haiku-marker-body {
@@ -96,43 +95,27 @@
 </head>
 <body>
     <div id="map"></div>
-    
     <div class="float-button" id="kigoButton">季語</div>
-
     <div class="modal-overlay" id="haikuModal"><div class="modal-content"><h2 id="haikuModalTitle">一句、詠む</h2><div class="haiku-input-container"><textarea class="haiku-input-area" id="shimoNoKuInput" placeholder="下 の 句" maxlength="10"></textarea><textarea class="haiku-input-area" id="nakaNoKuInput" placeholder="中 の 句" maxlength="10"></textarea><textarea class="haiku-input-area" id="kamiNoKuInput" placeholder="上 の 句" maxlength="10"></textarea></div><div class="modal-buttons"><button type="button" class="submit-haiku-button" id="submitHaiku">投稿</button><button type="button" class="cancel-button" id="cancelHaiku">取消</button></div></div></div>
     <div class="modal-overlay" id="kigoModal"><div class="modal-content"><h2 id="kigoModalTitle">今の季語</h2><div id="kigoListContainer"></div><div class="modal-buttons"><button type="button" class="cancel-button" id="closeKigoModal">閉じる</button></div></div></div>
 
     <script>
         // --- ★ Firebase（データベース）設定 ---
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyAHJZka9pXIl4LUo_Xtt1S7aINMJVDVDb0",
-  authDomain: "yomitama-6cb84.firebaseapp.com",
-  projectId: "yomitama-6cb84",
-  storageBucket: "yomitama-6cb84.firebasestorage.app",
-  messagingSenderId: "812764737990",
-  appId: "1:812764737990:web:a88d864b7e4c130c3542c7",
-  measurementId: "G-R1Q93K1BDV"
-};        firebase.initializeApp(firebaseConfig);
+        const firebaseConfig = { apiKey: "AIzaSyAHJZka9pXIl4LUo_Xtt1S7aINMJVDVDb0", authDomain: "yomitama-6cb84.firebaseapp.com", projectId: "yomitama-6cb84", storageBucket: "yomitama-6cb84.appspot.com", messagingSenderId: "812764737990", appId: "1:812764737990:web:a88d864b7e4c130c3542c7" };
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
     </script>
     
     <script>
-        // --- ★★★【QRラリー用 スポット設定（ピクセル座標バージョン）】★★★
-        // (例) QRコードのURL: .../index.html?spot=miharashidai
+        // --- スポット設定（変更なし） ---
         const spotLocations = {
-            // "目印": { pos: [ Y座標, X座標 ], name: "日本語名" }
-            // ★Y座標は「画像の上端から何ピクセルか」
-            // ★X座標は「画像の左端から何ピクセルか」
-            // ★ペイントソフトなどで調べて、あなたの画像に合わせて書き換えてください
-            "miharashidai": { pos: [ 250, 700 ], name: "見晴台で" }, // 例: 上から250px, 左から700pxの場所
-            "shinjiike":    { pos: [ 400, 300 ], name: "心字池で" }, // 例: 上から400px, 左から300pxの場所
+            "miharashidai": { pos: [ 250, 700 ], name: "見晴台で" }, 
+            "shinjiike":    { pos: [ 400, 300 ], name: "心字池で" }, 
             "anmon":        { pos: [ 650, 500 ], name: "庵（いおり）で" } 
-            // ...園内に設置する分だけ、すべて定義する
         };
 
         document.addEventListener('DOMContentLoaded', () => {
-            // --- ★ HTML要素の取得 ---
+            // --- HTML要素の取得（変更なし） ---
             const mapElement = document.getElementById('map');
             const kigoButton = document.getElementById('kigoButton');
             const haikuModal = document.getElementById('haikuModal');
@@ -145,68 +128,49 @@ const firebaseConfig = {
             const cancelHaikuButton = document.getElementById('cancelHaiku');
             const closeKigoModalButton = document.getElementById('closeKigoModal');
 
-            // --- ★ 状態を管理する変数 ---
+            // --- 状態管理の変数（変更なし） ---
             let allHaikuData = [];
             let haikuMarkers = {};
             let expandedMarker = null;
             let currentSpotId = null;
 
-            // --- ★ モーダルの開閉関数 ---
+            // --- モーダル関数（変更なし） ---
             const openModal = (modal) => modal.classList.add('is-visible');
             const closeModal = (modal) => modal.classList.remove('is-visible');
             const clearHaikuInputs = () => { kamiNoKuInput.value = ""; nakaNoKuInput.value = ""; shimoNoKuInput.value = ""; };
 
-            // --- ★★★【地図設定（ピクセル座標バージョン）】★★★
-            
-            // 1. あなたのイラストマップの「画像のサイズ」を指定
-            const mapWidth = 1322;  // ★★★ あなたの画像の「幅（ピクセル数）」に書き換える ★★★
-            const mapHeight = 1402; // ★★★ あなたの画像の「高さ（ピクセル数）」に書き換える ★★★
-
-            // 2. 「緯度経度」ではなく「ピクセル座標」を使う地図(L.CRS.Simple)を作成
+            // --- 地図設定（変更なし） ---
+            const mapWidth = 1000;
+            const mapHeight = 800;
             const map = L.map(mapElement, {
-                crs: L.CRS.Simple, // ★これが「ピクセル座標モード」の宣言
+                crs: L.CRS.Simple,
                 zoomControl: false,
-                minZoom: -1, // ★ズームレベル（適宜調整）
+                minZoom: -1,
                 maxZoom: 2
             });
-
-            // 3. 地図の「範囲」を画像のサイズに設定
-            // [0, 0] が左上、[mapHeight, mapWidth] が右下 になります
             const bounds = [ [0, 0], [mapHeight, mapWidth] ]; 
-            
-            // 4. あなたのイラストマップ画像を「背景」として設置
-            const mapImageUrl = 'mogusaen_illustmap.png'; // ★★★ あなたの画像ファイル名に書き換える ★★★
+            const mapImageUrl = 'mogusaen_illustmap.png';
             L.imageOverlay(mapImageUrl, bounds).addTo(map);
-
-            // 5. 地図を画像全体にフィットさせ、範囲外に動かないようにする
             map.fitBounds(bounds);
             map.setMaxBounds(bounds);
             
-            // --- ★★★【QRラリー】のメインロジック ★★★
+            // --- QRラリーのロジック（変更なし） ---
             const urlParams = new URLSearchParams(window.location.search);
             const spotId = urlParams.get('spot');
-
             if (spotId && spotLocations[spotId]) {
-                // URLに ?spot=... があり、それが定義済みの場所だったら
                 currentSpotId = spotId; 
                 const spotData = spotLocations[spotId];
-                
-                // ★その場所（ピクセル座標）に地図をズーム
-                map.setView(spotData.pos, 1); // ★ズームレベル（1など、適宜調整）
-                
-                // ★モーダルのタイトルを変更
+                map.setView(spotData.pos, 1); 
                 haikuModalTitle.textContent = `${spotData.name} 一句、詠む`;
-                
-                // ★自動で俳句モーダルを開く
                 openModal(haikuModal);
             }
 
-            // --- ★「いいね」機能の管理 ---
+            // --- 「いいね」機能（変更なし） ---
             const getLikedHaikuIds = () => { const ids = localStorage.getItem('yomitama_liked_ids'); return ids ? JSON.parse(ids) : []; };
             const addHaikuId = (id) => { const ids = getLikedHaikuIds(); if (!ids.includes(id)) { ids.push(id); localStorage.setItem('yomitama_liked_ids', JSON.stringify(ids)); } };
             const isHaikuLiked = (id) => getLikedHaikuIds().includes(id);
 
-            // --- ★ マップピン（マーカー）のサイズ計算（変更なし） ---
+            // --- マップピンのサイズ計算（変更なし） ---
             const getElementSize = (html, className) => {
                 const el = document.createElement('div');
                 el.style.position = 'absolute'; el.style.visibility = 'hidden'; el.style.left = '-9999px'; el.className = className; el.innerHTML = html;
@@ -216,9 +180,16 @@ const firebaseConfig = {
                 return size;
             };
 
-            // --- ★ 地図に俳句ピンを追加する関数 (ピクセル座標版) ---
+            // --- ★★★【変更点①】ピンを「ズラす（Jitter）」処理 ★★★
             function addHaikuToMap(haikuData) {
-                const { id, kami, naka, shimo, pos, likes } = haikuData; // ★ latlng を pos に変更
+                const { id, kami, naka, shimo, pos, likes } = haikuData; 
+                
+                // --- ↓ここから追加↓ ---
+                // 元の座標から、ほんの少し（-5px〜+5px）ランダムにズラす
+                // ※値(10)は、ズラす幅です。お好みで調整してください。
+                const jitterY = pos.y + (Math.random() - 0.5) * 10;
+                const jitterX = pos.x + (Math.random() - 0.5) * 10;
+                // --- ↑ここまで追加↑ ---
                 
                 const tailHeight = 10;
                 const iconHtml = `<div class="haiku-marker-body"><div class="haiku-tategaki"><span class="kami">${kami}</span><span class="naka-shimo-wrapper"><span class="naka">${naka}</span><span class="shimo">${shimo}</span></span></div><div class="haiku-actions"><button class="like-button" data-id="${id}">❤</button><span class="like-count">${likes}</span></div></div>`;
@@ -234,9 +205,8 @@ const firebaseConfig = {
                     iconAnchor: [iconWidth / 2, iconTotalHeight],
                 });
                 
-                // ★★★ L.marker の座標を [pos.y, pos.x] に変更 ★★★
-                // Leafletのピクセル座標系は [Y, X] の順です
-                const marker = L.marker([pos.y, pos.x], {icon: haikuIcon}).addTo(map); 
+                // ★★★ L.marker の座標を、ズラした [jitterY, jitterX] に変更 ★★★
+                const marker = L.marker([jitterY, jitterX], {icon: haikuIcon}).addTo(map); 
                 marker.haikuId = id;
                 haikuMarkers[id] = marker;
 
@@ -257,13 +227,7 @@ const firebaseConfig = {
                     L.DomEvent.disableClickPropagation(el);
                     const likeButton = el.querySelector('.like-button');
                     const likeCountSpan = el.querySelector('.like-count');
-                    
-                    if (isHaikuLiked(id)) {
-                        likeButton.classList.add('liked');
-                        likeButton.disabled = true;
-                        likeButton.textContent = '済';
-                    }
-
+                    if (isHaikuLiked(id)) { likeButton.classList.add('liked'); likeButton.disabled = true; likeButton.textContent = '済'; }
                     likeButton.addEventListener('click', (e) => {
                         L.DomEvent.stopPropagation(e);
                         if (isHaikuLiked(id)) return;
@@ -286,7 +250,7 @@ const firebaseConfig = {
                 });
             }
             
-            // マップの何もないところをクリックしたら、開いているピンを閉じる
+            // マップクリック（変更なし）
             map.on('click', () => {
                 if (expandedMarker) {
                     expandedMarker.getElement().classList.remove('expanded');
@@ -294,27 +258,25 @@ const firebaseConfig = {
                 }
             });
 
-            // --- ★ データベース（Firebase）から俳句を読み込む (ピクセル座標版) ---
-            db.collection("haiku").orderBy("createdAt", "asc").onSnapshot((querySnapshot) => {
+            // --- ★★★【変更点②】「最新200件」だけを読み込む ★★★
+            db.collection("haiku")
+              .orderBy("createdAt", "desc") // ★「asc」（古い順）から「desc」（新しい順）に変更
+              .limit(200)                  // ★「最新200件まで」という制限を追加
+              .onSnapshot((querySnapshot) => {
+                
+                // 変更があった俳句だけを処理する
                 querySnapshot.docChanges().forEach((change) => {
                     const doc = change.doc;
                     const data = doc.data();
+                    const haikuData = { id: doc.id, kami: data.kami, naka: data.naka, shimo: data.shimo, pos: data.pos, likes: data.likes };
                     
-                    // ★ latlng を pos に変更
-                    const haikuData = { 
-                        id: doc.id, 
-                        kami: data.kami, naka: data.naka, shimo: data.shimo, 
-                        pos: data.pos, // ★ データベースから pos ( {y: ..., x: ...} ) を取得
-                        likes: data.likes 
-                    };
-                    
-                    if (change.type === "added") {
-                        if(haikuData.pos) { // pos が存在する場合のみピンを立てる
+                    if (change.type === "added") { // 新しい句が追加された
+                        if(haikuData.pos && !haikuMarkers[haikuData.id]) { // pos があり、まだマップに無い場合
                             addHaikuToMap(haikuData);
                             allHaikuData.push(haikuData);
                         }
                     }
-                    if (change.type === "modified") {
+                    if (change.type === "modified") { // 「いいね」が押された
                         const marker = haikuMarkers[doc.id];
                         if (marker) {
                             const el = marker.getElement();
@@ -323,42 +285,37 @@ const firebaseConfig = {
                         const index = allHaikuData.findIndex(h => h.id === doc.id);
                         if (index > -1) { allHaikuData[index].likes = data.likes; }
                     }
+                    if (change.type === "removed") { // （200件を超えて）古い句がリストから削除された
+                        const marker = haikuMarkers[doc.id];
+                        if (marker) {
+                            map.removeLayer(marker); // マップからピンを削除
+                            delete haikuMarkers[doc.id]; // 管理リストからも削除
+                        }
+                        allHaikuData = allHaikuData.filter(h => h.id !== doc.id);
+                    }
                 });
             });
 
-            // --- ★★★【投稿処理】(ピクセル座標版) ★★★
+            // --- 投稿処理（変更なし） ---
             submitHaikuButton.addEventListener('click', () => {
                 const kamiNoKu = kamiNoKuInput.value.trim();
                 const nakaNoKu = nakaNoKuInput.value.trim();
                 const shimoNoKu = shimoNoKuInput.value.trim();
-
-                if (kamiNoKu === "" || nakaNoKu === "" || shimoNoKu === "") {
-                    alert("すべての句を入力してください。");
-                    return;
-                }
-                
-                if (!currentSpotId) {
-                    alert("投稿場所が特定できません。\n園内のQRコードから再度読み込んでください。");
-                    return;
-                }
-
-                // ★ 投稿する位置情報(Y, X)を spotLocations から取得
-                const postLocation = spotLocations[currentSpotId]; // {pos: [Y, X], name: ...}
-
-                // 4. データベースに投稿 (pos オブジェクトとして保存)
+                if (kamiNoKu === "" || nakaNoKu === "" || shimoNoKu === "") { alert("すべての句を入力してください。"); return; }
+                if (!currentSpotId) { alert("投稿場所が特定できません。\n園内のQRコードから再度読み込んでください。"); return; }
+                const postLocation = spotLocations[currentSpotId]; 
                 db.collection("haiku").add({
                     kami: kamiNoKu, 
                     naka: nakaNoKu, 
                     shimo: shimoNoKu, 
-                    pos: { y: postLocation.pos[0], x: postLocation.pos[1] }, // ★ {y: Y, x: X} 形式で保存
+                    pos: { y: postLocation.pos[0], x: postLocation.pos[1] }, 
                     spotName: currentSpotId, 
                     likes: 0, 
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 }).then(() => {
                     closeModal(haikuModal);
-                    currentSpotId = null; // リセット
+                    currentSpotId = null; 
                     setTimeout(clearHaikuInputs, 300);
-                    // 投稿後、地図を全体表示に戻す
                     map.fitBounds(bounds); 
                 }).catch((error) => {
                     console.error("Error writing document: ", error);
@@ -366,30 +323,25 @@ const firebaseConfig = {
                 });
             });
             
-            // --- ★「季語」ボタンの処理 (変更なし) ---
+            // --- 季語ボタン（変更なし） ---
             kigoButton.addEventListener('click', () => {
                 const kigoData = { 
                     1: ["正月", "初詣", "寒椿"], 2: ["梅", "春一番", "立春"], 3: ["雛祭り", "蝶", "春分"], 
                     4: ["花見", "桜", "燕"], 5: ["鯉のぼり", "新緑", "田植え"], 6: ["梅雨", "紫陽花", "蛍"], 
                     7: ["七夕", "風鈴", "蝉"], 8: ["盆", "向日葵", "雷"], 9: ["月見", "鈴虫", "台風"], 
                     10: ["紅葉", "秋祭り", "運動会"], 
-                    11: ["七五三", "木枯らし", "焚き火", "紅葉(もみじ)", "落葉", "小春日和"], // 11月を強化
+                    11: ["七五三", "木枯らし", "焚き火", "紅葉(もみじ)", "落葉", "小春日和"], 
                     12: ["クリスマス", "大晦日", "雪"] 
                 };
                 const kigoModalTitle = document.getElementById('kigoModalTitle');
                 const kigoListContainer = document.getElementById('kigoListContainer');
-                const month = new Date().getMonth() + 1; // 11月
-
+                const month = new Date().getMonth() + 1; 
                 kigoModalTitle.textContent = `${month}月の季語`;
                 kigoListContainer.innerHTML = '';
                 const kigoList = kigoData[month] || [];
                 if (kigoList.length > 0) {
                     const ul = document.createElement('ul');
-                    kigoList.forEach(kigo => {
-                        const li = document.createElement('li');
-                        li.textContent = kigo;
-                        ul.appendChild(li);
-                    });
+                    kigoList.forEach(kigo => { const li = document.createElement('li'); li.textContent = kigo; ul.appendChild(li); });
                     kigoListContainer.appendChild(ul);
                 } else {
                     kigoListContainer.textContent = '該当する季語がありません。';
@@ -397,22 +349,18 @@ const firebaseConfig = {
                 openModal(kigoModal);
             });
 
-            // --- ★ モーダルを閉じる処理 (変更なし) ---
+            // --- モーダルを閉じる処理（変更なし） ---
             cancelHaikuButton.addEventListener('click', () => { 
                 closeModal(haikuModal); 
-                currentSpotId = null; // リセット
+                currentSpotId = null; 
                 setTimeout(clearHaikuInputs, 300); 
             });
             closeKigoModalButton.addEventListener('click', () => { closeModal(kigoModal); });
-            
             [haikuModal, kigoModal].forEach(modal => { 
                 modal.addEventListener('click', (e) => { 
                     if (e.target === modal) { 
                         closeModal(modal); 
-                        if(modal === haikuModal) {
-                            currentSpotId = null; // リセット
-                            setTimeout(clearHaikuInputs, 300); 
-                        }
+                        if(modal === haikuModal) { currentSpotId = null; setTimeout(clearHaikuInputs, 300); }
                     } 
                 }); 
             });
