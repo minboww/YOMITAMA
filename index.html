@@ -9,7 +9,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sawarabi+Mincho&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
@@ -129,6 +129,16 @@
     </script>
     
     <script>
+        // ★★★【QRラリー用 設定】★★★
+        // 園内に設置するQRコードの「場所（緯度経度）」をここで定義します
+        // (例) QRコードのURL: .../index.html?spot=miharashidai
+        const spotLocations = {
+            "miharashidai": { lat: 35.6300, lng: 139.3705 }, // 見晴台
+            "shinjiike":    { lat: 35.6295, lng: 139.3700 }, // 心字池
+            "anmon":        { lat: 35.6290, lng: 139.3695 }  // 庵門
+            // ...園内に設置する分だけ、すべて定義する
+        };
+
         document.addEventListener('DOMContentLoaded', () => {
             const mapElement = document.getElementById('map');
             const yomuButton = document.getElementById('yomuButton');
@@ -150,18 +160,62 @@
             let allHaikuData = [];
             let haikuMarkers = {};
             let expandedMarker = null;
+            let currentSpotId = null; // ★【QRラリー用】どのQRから来たかを保存する変数
 
             const openModal = (modal) => modal.classList.add('is-visible');
             const closeModal = (modal) => modal.classList.remove('is-visible');
             const clearHaikuInputs = () => { kamiNoKuInput.value = ""; nakaNoKuInput.value = ""; shimoNoKuInput.value = ""; };
 
-            const map = L.map(mapElement, { zoomControl: false }).setView([35.6812, 139.7671], 13);
+            // --- ★ここから【地図設定】の変更 ---
+
+            // 1. 百草園の中心座標とズームレベルを設定
+            const mogusaenCenter = [35.6300, 139.3705]; // ★要調整: 百草園の中心
+            const map = L.map(mapElement, { zoomControl: false }).setView(mogusaenCenter, 17); // ズームレベルを17に変更
+
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>' }).addTo(map);
 
-            map.locate({setView: true, maxZoom: 16, watch: true});
+            // 2. (推奨) 園外に地図が動かないように範囲を制限
+            const bounds = [
+                [35.628, 139.368], // ★要調整: 百草園の左下（南西）
+                [35.632, 139.373]  // ★要調整: 百草園の右上（北東）
+            ];
+            map.setMaxBounds(bounds);
+
+            // 3. (★超推奨) 園内イラストマップ画像を地図に重ねる
+            // ※画像ファイル('mogusaen-map.png')を同じフォルダに置く
+            // ※画像がピッタリ合うように、imageBoundsの緯度経度の調整が必要です
+            /*
+            const mapImageUrl = 'mogusaen-map.png'; 
+            const imageBounds = [
+                [35.6285, 139.369], // ★要調整: 画像の左下
+                [35.6315, 139.372]  // ★要調整: 画像の右上
+            ];
+            L.imageOverlay(mapImageUrl, imageBounds, {
+                opacity: 0.8,
+                attribution: "京王百草園 園内マップ"
+            }).addTo(map);
+            */
+            // --- ★ここまで【地図設定】の変更 ---
+
+
+            map.locate({setView: true, maxZoom: 17, watch: true}); // maxZoomを17に変更
             map.on('locationfound', (e) => { currentUserPosition = e.latlng; });
-            map.on('locationerror', (e) => { alert("位置情報の取得に失敗しました。"); });
+            map.on('locationerror', (e) => { console.log("位置情報の取得に失敗しました。"); });
             
+            // --- ★ここから【QRラリー】のロジック追加 ---
+            
+            // ページ読み込み時にQRコードの「目印」をチェック
+            const urlParams = new URLSearchParams(window.location.search);
+            const spotId = urlParams.get('spot');
+
+            if (spotId && spotLocations[spotId]) {
+                // URLに ?spot=... があり、それが定義済みの場所だったら
+                currentSpotId = spotId; // 場所を記憶
+                openModal(haikuModal); // すぐに俳句モーダルを開く
+            }
+            // --- ★ここまで【QRラリー】のロジック追加 ---
+
+
             const getLikedHaikuIds = () => { const ids = localStorage.getItem('yomitama_liked_ids'); return ids ? JSON.parse(ids) : []; };
             const addLikedHaikuId = (id) => { const ids = getLikedHaikuIds(); if (!ids.includes(id)) { ids.push(id); localStorage.setItem('yomitama_liked_ids', JSON.stringify(ids)); } };
             const isHaikuLiked = (id) => getLikedHaikuIds().includes(id);
@@ -232,12 +286,12 @@
 
                         const docRef = db.collection("haiku").doc(id);
                         db.runTransaction((transaction) => {
-                           return transaction.get(docRef).then((doc) => {
-                               if (!doc.exists) { throw "Document does not exist!"; }
-                               const newLikes = (doc.data().likes || 0) + 1;
-                               transaction.update(docRef, { likes: newLikes });
-                               return newLikes;
-                           });
+                            return transaction.get(docRef).then((doc) => {
+                                if (!doc.exists) { throw "Document does not exist!"; }
+                                const newLikes = (doc.data().likes || 0) + 1;
+                                transaction.update(docRef, { likes: newLikes });
+                                return newLikes;
+                            });
                         }).then((newLikes) => {
                             addLikedHaikuId(id);
                             likeCountSpan.textContent = newLikes;
@@ -280,15 +334,53 @@
                 });
             });
 
+            // --- ★ここから【投稿処理】の変更 ---
             submitHaikuButton.addEventListener('click', () => {
                 const kamiNoKu = kamiNoKuInput.value.trim();
                 const nakaNoKu = nakaNoKuInput.value.trim();
                 const shimoNoKu = shimoNoKuInput.value.trim();
-                if (!currentUserPosition || kamiNoKu === "" || nakaNoKu === "" || shimoNoKu === "") { alert("すべての句を入力し、現在地が取得できるのを待ってください。"); return; }
+
+                // 1. 入力チェック
+                if (kamiNoKu === "" || nakaNoKu === "" || shimoNoKu === "") {
+                    alert("すべての句を入力してください。");
+                    return;
+                }
+                
+                // 2. 位置情報の確認
+                if (!currentSpotId && !currentUserPosition) {
+                    alert("位置情報がありません。\n園内のQRコードから再度読み込むか、\n「詠む」ボタンを押し直してください。");
+                    return;
+                }
+
+                // 3. 投稿する位置情報を決定
+                let postLocation;
+                if (currentSpotId) {
+                    // QRコードから来た場合
+                    postLocation = spotLocations[currentSpotId];
+                } else {
+                    // (QR以外で)「詠む」ボタンから来た場合 (庵での投稿など)
+                    postLocation = { lat: currentUserPosition.lat, lng: currentUserPosition.lng };
+                }
+
+                // 4. データベースに投稿
                 db.collection("haiku").add({
-                    kami: kamiNoKu, naka: nakaNoKu, shimo: shimoNoKu, latlng: { lat: currentUserPosition.lat, lng: currentUserPosition.lng }, likes: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                }).then(() => { closeModal(haikuModal); setTimeout(clearHaikuInputs, 300); }).catch((error) => { console.error("Error writing document: ", error); alert("投稿に失敗しました。"); });
+                    kami: kamiNoKu, 
+                    naka: nakaNoKu, 
+                    shimo: shimoNoKu, 
+                    latlng: { lat: postLocation.lat, lng: postLocation.lng }, // ★変更点
+                    spotName: currentSpotId || '自由投稿', // ★(任意) どこで詠んだか記録
+                    likes: 0, 
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    closeModal(haikuModal);
+                    currentSpotId = null; // ★リセット
+                    setTimeout(clearHaikuInputs, 300);
+                }).catch((error) => {
+                    console.error("Error writing document: ", error);
+                    alert("投稿に失敗しました。");
+                });
             });
+            // --- ★ここまで【投稿処理】の変更 ---
             
             listButton.addEventListener('click', () => {
                 if (!currentUserPosition) { alert("現在地が特定できていません。"); return; }
@@ -307,7 +399,7 @@
                         const marker = haikuMarkers[haiku.id];
                         if (marker) {
                             closeModal(listModal);
-                            map.setView(marker.getLatLng(), 16);
+                            map.setView(marker.getLatLng(), 17); // ズームレベルを17に変更
                             marker.fire('click');
                         }
                     });
@@ -316,13 +408,28 @@
                 openModal(listModal);
             });
 
-            yomuButton.addEventListener('click', () => { if (!currentUserPosition) { alert("現在地が特定できていません。"); return; } openModal(haikuModal); });
+            yomuButton.addEventListener('click', () => { 
+                if (!currentUserPosition) { 
+                    alert("現在地が特定できていません。\n庵のスタッフに声をかけるか、\n園内のQRコードをご利用ください。"); 
+                    return; 
+                } 
+                currentSpotId = null; // ★「詠む」ボタンは自由投稿扱い
+                openModal(haikuModal); 
+            });
 
             kigoButton.addEventListener('click', () => {
-                const kigoData = { 1: ["正月", "初詣", "寒椿"], 2: ["梅", "春一番", "立春"], 3: ["雛祭り", "蝶", "春分"], 4: ["花見", "桜", "燕"], 5: ["鯉のぼり", "新緑", "田植え"], 6: ["梅雨", "紫陽花", "蛍"], 7: ["七夕", "風鈴", "蝉"], 8: ["盆", "向日葵", "雷"], 9: ["月見", "鈴虫", "台風"], 10: ["紅葉", "秋祭り", "運動会"], 11: ["七五三", "木枯らし", "焚き火"], 12: ["クリスマス", "大晦日", "雪"] };
+                // 11月の季語を強化
+                const kigoData = { 
+                    1: ["正月", "初詣", "寒椿"], 2: ["梅", "春一番", "立春"], 3: ["雛祭り", "蝶", "春分"], 
+                    4: ["花見", "桜", "燕"], 5: ["鯉のぼり", "新緑", "田植え"], 6: ["梅雨", "紫陽花", "蛍"], 
+                    7: ["七夕", "風鈴", "蝉"], 8: ["盆", "向日葵", "雷"], 9: ["月見", "鈴虫", "台風"], 
+                    10: ["紅葉", "秋祭り", "運動会"], 
+                    11: ["七五三", "木枯らし", "焚き火", "紅葉(もみじ)", "落葉", "小春日和"], // ★11月を追加
+                    12: ["クリスマス", "大晦日", "雪"] 
+                };
                 const kigoModalTitle = document.getElementById('kigoModalTitle');
                 const kigoListContainer = document.getElementById('kigoListContainer');
-                const month = new Date().getMonth() + 1;
+                const month = new Date().getMonth() + 1; // 11月
 
                 kigoModalTitle.textContent = `${month}月の季語`;
                 kigoListContainer.innerHTML = '';
@@ -341,10 +448,20 @@
                 openModal(kigoModal);
             });
 
-            cancelHaikuButton.addEventListener('click', () => { closeModal(haikuModal); setTimeout(clearHaikuInputs, 300); });
+            cancelHaikuButton.addEventListener('click', () => { closeModal(haikuModal); currentSpotId = null; setTimeout(clearHaikuInputs, 300); }); // ★リセット追加
             closeKigoModalButton.addEventListener('click', () => { closeModal(kigoModal); });
             closeListModalButton.addEventListener('click', () => { closeModal(listModal); });
-            [haikuModal, kigoModal, listModal].forEach(modal => { modal.addEventListener('click', (e) => { if (e.target === modal) { closeModal(modal); if(modal === haikuModal) setTimeout(clearHaikuInputs, 300); } }); });
+            [haikuModal, kigoModal, listModal].forEach(modal => { 
+                modal.addEventListener('click', (e) => { 
+                    if (e.target === modal) { 
+                        closeModal(modal); 
+                        if(modal === haikuModal) {
+                            currentSpotId = null; // ★リセット追加
+                            setTimeout(clearHaikuInputs, 300); 
+                        }
+                    } 
+                }); 
+            });
         });
     </script>
 </body>
