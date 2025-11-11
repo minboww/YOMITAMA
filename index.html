@@ -142,17 +142,21 @@
             // --- 地図設定（変更なし） ---
             const mapWidth = 4133;
             const mapHeight = 4400;
+
+            // --- ★★★ 修正点① ★★★ ---
+            // minZoom: -1 を追加して、縮小できるようにする
             const map = L.map(mapElement, {
                 crs: L.CRS.Simple,
                 zoomControl: false,
                 zoomSnap: 0,
-                maxZoom: 3
+                maxZoom: 3,
+                minZoom: -1 // ★ 縮小できるように最小ズームを設定
             });
+            // --- ★★★ 修正点① ここまで ★★★ ---
+
             const bounds = [ [0, 0], [mapHeight, mapWidth] ]; 
             const mapImageUrl = 'mogusaen_illustmap.jpg';
             L.imageOverlay(mapImageUrl, bounds).addTo(map);
-
-            // --- ★★★ ここから書き換え ★★★ ---
 
             // --- QRラリーのロジック と 地図の初期表示 ---
             const urlParams = new URLSearchParams(window.location.search);
@@ -167,18 +171,18 @@
                 openModal(haikuModal);
 
             } else {
-                // (B) QRコードがない場合：地図全体を画面に収める (二つ目のコードの object-fit: contain に相当する処理)
+                // (B) QRコードがない場合：地図全体を画面に収める
+                // これで「最初に地図の全体を見る」を実現
                 map.fitBounds(bounds);
             }
             
             // 地図の「範囲外」には移動できないように設定
             map.setMaxBounds(bounds);
             
-            // (B)の「全体表示」よりもズームアウトできないように最小ズームレベルを設定
-            // (A)の場合も、これ以上ズームアウトすると地図外が見えるのを防ぐ
-            map.setMinZoom(map.getBoundsZoom(bounds, true));
-
-            // --- ★★★ ここまで書き換え ★★★ ---
+            // --- ★★★ 修正点② ★★★ ---
+            // 以下の1行を削除 (これが「縮小できない」原因でした)
+            // map.setMinZoom(map.getBoundsZoom(bounds, true)); 
+            // --- ★★★ 修正点② ここまで ★★★ ---
 
 
             // --- 「いいね」機能（変更なし） ---
@@ -196,12 +200,10 @@
                 return size;
             };
 
-            // --- ★★★ ピンを「ズラす（Jitter）」処理（変更なし） ★★★
-            // (元のコードの「変更点①」の部分。内容は変更ありません)
+            // --- ピンを「ズラす（Jitter）」処理（変更なし） ---
             function addHaikuToMap(haikuData) {
                 const { id, kami, naka, shimo, pos, likes } = haikuData; 
                 
-                // 元の座標から、ほんの少し（-5px〜+5px）ランダムにズラす
                 const jitterY = pos.y + (Math.random() - 0.5) * 10;
                 const jitterX = pos.x + (Math.random() - 0.5) * 10;
                 
@@ -271,8 +273,7 @@
                 }
             });
 
-            // --- ★★★ 「最新200件」だけを読み込む（変更なし） ★★★
-            // (元のコードの「変更点②」の部分。内容は変更ありません)
+            // --- 「最新200件」だけを読み込む（変更なし） ---
             db.collection("haiku")
               .orderBy("createdAt", "desc") 
               .limit(200)                  
@@ -329,8 +330,7 @@
                     closeModal(haikuModal);
                     currentSpotId = null; 
                     setTimeout(clearHaikuInputs, 300);
-                    // 投稿後は全体表示に戻す
-                    map.fitBounds(bounds); 
+                    map.fitBounds(bounds); // 投稿後は全体表示に戻す
                 }).catch((error) => {
                     console.error("Error writing document: ", error);
                     alert("投稿に失敗しました: " + error);
@@ -345,7 +345,6 @@
             });
             closeKigoModalButton.addEventListener('click', () => closeModal(kigoModal));
             kigoButton.addEventListener('click', () => {
-                // ここに季語リストを取得する処理などを将来的に追加できます
                 document.getElementById('kigoListContainer').innerHTML = "<ul><li>（ここに季語リストが入ります）</li></ul>";
                 openModal(kigoModal);
             });
