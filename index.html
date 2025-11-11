@@ -151,8 +151,10 @@
             const bounds = [ [0, 0], [mapHeight, mapWidth] ]; 
             const mapImageUrl = 'mogusaen_illustmap.jpg';
             L.imageOverlay(mapImageUrl, bounds).addTo(map);
-            map.fitBounds(bounds);
-         map.setMinZoom(map.getZoom());
+           setTimeout(() => {
+                map.fitBounds(bounds);
+                map.setMinZoom(map.getZoom());
+            }, 100);
             map.setMaxBounds(bounds);
             
             // --- QRラリーのロジック（変更なし） ---
