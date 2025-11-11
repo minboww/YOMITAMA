@@ -30,7 +30,7 @@
             --overlay-color: rgba(0, 0, 0, 0.6);
         }
         html, body { height: 100%; margin: 0; padding: 0; font-family: var(--font-serif); background-color: var(--bg-color); color: var(--base-text-color); }
-        #map { width: 100%; height: 100%; background-color: var(--bg-color); }
+       #map { width: 100%; height: 100vh; background-color: var(--bg-color); }
         .float-button { position: fixed; bottom: 30px; width: 80px; height: 80px; color: var(--white-color); border-radius: 50%; border: 2px solid var(--white-color); box-shadow: 0 4px 12px var(--shadow-color); font-size: 26px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; z-index: 1000; }
         .float-button:hover { transform: scale(1.05) translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15); }
         #kigoButton { left: 20px; background-color: var(--secondary-color); }
@@ -151,11 +151,17 @@
             const bounds = [ [0, 0], [mapHeight, mapWidth] ]; 
             const mapImageUrl = 'mogusaen_illustmap.jpg';
             L.imageOverlay(mapImageUrl, bounds).addTo(map);
-           setTimeout(() => {
-                map.fitBounds(bounds);
-                map.setMinZoom(map.getZoom());
-            }, 100);
-            map.setMaxBounds(bounds);
+     // 2. 画像の「範囲外」には移動できないように設定
+            map.setMaxBounds(bounds);
+
+            // 3.「bounds全体がピッタリ収まるズームレベル」をLeafletに計算させる
+            const minZoomLevel = map.getBoundsZoom(bounds, true); 
+
+            // 4.「計算したズームレベル」を「最小ズーム」として設定
+            map.setMinZoom(minZoomLevel);
+
+            // 5.「boundsの中心」と「計算したズームレベル」で初期表示を実行
+            map.setView( [mapHeight / 2, mapWidth / 2], minZoomLevel );
             
             // --- QRラリーのロジック（変更なし） ---
             const urlParams = new URLSearchParams(window.location.search);
