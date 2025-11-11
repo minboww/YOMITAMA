@@ -145,13 +145,14 @@
             const map = L.map(mapElement, {
                 crs: L.CRS.Simple,
                 zoomControl: false,
-                minZoom: -1,
-                maxZoom: 2
+             
+                maxZoom: 3
             });
             const bounds = [ [0, 0], [mapHeight, mapWidth] ]; 
             const mapImageUrl = 'mogusaen_illustmap.jpg';
             L.imageOverlay(mapImageUrl, bounds).addTo(map);
             map.fitBounds(bounds);
+         map.setMinZoom(map.getZoom());
             map.setMaxBounds(bounds);
             
             // --- QRラリーのロジック（変更なし） ---
