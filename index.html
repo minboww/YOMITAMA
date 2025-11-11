@@ -1,46 +1,39 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ヨミタマ (画像表示)</title>
-    
-    <style>
-        /*          * 1. ページ全体の余白をなくす 
-         */
-        html, body {
-            margin: 0;
-            padding: 0;
-            /* 画面の高さ・幅いっぱいに設定 */
-            height: 100vh; 
-            width: 100%;
-            /* 元の背景色 */
-            background-color: #f7f6f2; 
-            /* スクロールバーが出ないようにする */
-            overflow: hidden;
-            /* 画像を中央に配置するため */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ヨミタマ (画像表示)</title>
+    
+    <style>
+        /* 1. ページ全体の余白をなくす */
+        html, body {
+            margin: 0;
+            padding: 0;
+            /* 画面の高さを100dvh (動的な表示領域の高さ) に */
+            height: 100dvh; 
+            width: 100%;
+            background-color: #f7f6f2; 
+            overflow: hidden;
+            
+            /* 画像を中央に配置するため */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-        /*          * 2. 画像を「画面に収まる」ように設定 
-         */
-        img {
-            /* 幅は、画面の幅を絶対にはみ出さない */
-            max-width: 100%;
-            /* 高さは、画面の高さを絶対にはみ出さない */
-            max-height: 100%;
-            /*              * アスペクト比を保ったまま、この枠内(画面内)に
-             * 「収まる(contain)」ように表示する
-             */
-            object-fit: contain; 
-        }
-    </style>
+        /* 2. 画像の設定 (変更済み) */
+        img {
+            /* img要素を親(body)いっぱいに広げる */
+            width: 100%;
+            height: 100%;
+            
+            /* その枠内で、アスペクト比を保って「収める」 */
+            object-fit: contain; 
+        }
+    </style>
 </head>
 <body>
-
-        <img src="mogusaen_illustmap.jpg" alt="百草園 イラストマップ">
-
-    </body>
+    <img src="mogusaen_illustmap.jpg" alt="百草園 イラストマップ">
+</body>
 </html>
