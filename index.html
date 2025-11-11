@@ -83,7 +83,12 @@
         .modal-content { background-color: var(--bg-color); padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.2); transform: translateY(20px); transition: transform 0.3s ease-out; }
         .modal-overlay.is-visible .modal-content { transform: translateY(0); }
         .modal-content h2 { margin-top: 0; font-size: 24px; color: var(--base-text-color); }
-        #kigoListContainer { text-align: left; font-family: var(--font-sans); list-style-position: inside; }
+        #kigoListContainer { text-align: left; font-family: var(--font-sans); list-style-position: inside;overflow-y: auto; /* 内容が多ければスクロール */
+            padding-right: 15px; /* スクロールバーの分、少し右に余白 */
+
+            /* ★★★ 以下2行を追加 ★★★ */
+            flex: 1; /* flexコンテナ内で残りのスペースをすべて使う */
+            min-height: 0; /* 高さが0になれるようにし、縮小を許可 */ }
         .haiku-input-container { display: flex; justify-content: center; gap: 15px; margin: 25px 0; }
         .haiku-input-area { writing-mode: vertical-rl; text-orientation: upright; height: 160px; width: 45px; padding: 12px; font-size: 18px; font-family: inherit; border: 1px solid var(--light-gray-color); border-radius: 6px; resize: none; white-space: pre; overflow: hidden; background-color: var(--white-color); transition: border-color 0.2s, box-shadow 0.2s; }
         .haiku-input-area:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(85, 107, 47, 0.2); }
