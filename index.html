@@ -1,379 +1,46 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ヨミタマ</title>
+    <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ヨミタマ (画像表示)</title>
+    
+    <style>
+        /*          * 1. ページ全体の余白をなくす 
+         */
+        html, body {
+            margin: 0;
+            padding: 0;
+            /* 画面の高さ・幅いっぱいに設定 */
+            height: 100vh; 
+            width: 100%;
+            /* 元の背景色 */
+            background-color: #f7f6f2; 
+            /* スクロールバーが出ないようにする */
+            overflow: hidden;
+            /* 画像を中央に配置するため */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Sawarabi+Mincho&display=swap" rel="stylesheet">
-    
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-    
-    <style>
-        /* CSSは変更ありません */
-        :root {
-            --font-serif: 'Sawarabi Mincho', "游明朝", YuMincho, serif;
-            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            --bg-color: #f7f6f2;
-            --base-text-color: #3a3a3a;
-            --primary-color: #556b2f;
-            --secondary-color: #b22222;
-            --white-color: #ffffff;
-            --light-gray-color: #e0e0e0;
-            --shadow-color: rgba(0, 0, 0, 0.1);
-            --overlay-color: rgba(0, 0, 0, 0.6);
-        }
-        html, body { height: 100%; margin: 0; padding: 0; font-family: var(--font-serif); background-color: var(--bg-color); color: var(--base-text-color); }
-       #map { width: 100%; height: 100%; background-color: var(--bg-color); }
-        .float-button { position: fixed; bottom: 30px; width: 80px; height: 80px; color: var(--white-color); border-radius: 50%; border: 2px solid var(--white-color); box-shadow: 0 4px 12px var(--shadow-color); font-size: 26px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; z-index: 1000; }
-        .float-button:hover { transform: scale(1.05) translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15); }
-        #kigoButton { left: 20px; background-color: var(--secondary-color); }
-        .haiku-marker { cursor: pointer; transition: transform 0.2s ease-out; position: relative; }
-        .haiku-marker:hover { transform: scale(1.05); z-index: 1000 !important; }
-        .haiku-marker-body {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(255, 255, 255, 0.9);
-            -webkit-backdrop-filter: blur(6px);
-            backdrop-filter: blur(6px);
-            border: 1px solid rgba(85, 107, 47, 0.7);
-            border-radius: 8px;
-            padding: 10px 6px;
-            box-shadow: 0 3px 8px var(--shadow-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            transition: padding 0.3s ease-in-out;
-        }
-        .leaflet-div-icon { background: none; border: none; }
-        .haiku-marker-body::after { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 10px solid rgba(85, 107, 47, 0.7); }
-        .haiku-tategaki { writing-mode: vertical-rl; text-orientation: mixed; white-space: nowrap; font-size: 16px; font-weight: bold; color: var(--base-text-color); letter-spacing: 0.1em; line-height: 1.7; transition: all 0.3s ease-in-out; }
-        .naka-shimo-wrapper { display: inline-block; max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out 0.1s; margin: 0; padding: 0; }
-        .kami, .naka, .shimo { display: inline-block; }
-        .naka { margin-right: 0.8em; }
-        .haiku-actions {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            max-height: 0;
-            opacity: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out 0.1s;
-        }
-        .like-button { background-color: #ffefff; border: 1px solid #e1bee7; color: #8e24aa; padding: 5px 10px; border-radius: 15px; cursor: pointer; font-family: var(--font-sans); font-size: 14px; transition: background-color 0.2s; white-space: nowrap; }
-        .like-button.liked, .like-button:disabled { background-color: #e1bee7; color: white; cursor: not-allowed; }
-        .like-count { font-family: var(--font-sans); font-weight: bold; font-size: 16px; color: #6a6a6a; }
-        .haiku-marker.expanded .haiku-marker-body { padding: 12px 10px; }
-        .haiku-marker.expanded .naka-shimo-wrapper { max-height: 20em; opacity: 1; }
-        .haiku-marker.expanded .haiku-actions { max-height: 50px; opacity: 1; }
-        
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--overlay-color); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; padding: 0 15px; box-sizing: border-box; }
-        .modal-overlay.is-visible { opacity: 1; visibility: visible; }
-        .modal-content { background-color: var(--bg-color); padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.2); transform: translateY(20px); transition: transform 0.3s ease-out; }
-        .modal-overlay.is-visible .modal-content { transform: translateY(0); }
-        .modal-content h2 { margin-top: 0; font-size: 24px; color: var(--base-text-color); }
-        #kigoListContainer { text-align: left; font-family: var(--font-sans); list-style-position: inside; }
-        .haiku-input-container { display: flex; justify-content: center; gap: 15px; margin: 25px 0; }
-        .haiku-input-area { writing-mode: vertical-rl; text-orientation: upright; height: 160px; width: 45px; padding: 12px; font-size: 18px; font-family: inherit; border: 1px solid var(--light-gray-color); border-radius: 6px; resize: none; white-space: pre; overflow: hidden; background-color: var(--white-color); transition: border-color 0.2s, box-shadow 0.2s; }
-        .haiku-input-area:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(85, 107, 47, 0.2); }
-        .modal-buttons { margin-top: 25px; }
-        .modal-buttons button { padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; border: none; font-family: var(--font-sans); font-weight: bold; transition: opacity 0.2s; }
-        .submit-haiku-button { background-color: var(--primary-color); color: white; margin-right: 10px; }
-        .cancel-button { background-color: #d0d0d0; color: #555; }
-    </style>
+        /*          * 2. 画像を「画面に収まる」ように設定 
+         */
+        img {
+            /* 幅は、画面の幅を絶対にはみ出さない */
+            max-width: 100%;
+            /* 高さは、画面の高さを絶対にはみ出さない */
+            max-height: 100%;
+            /*              * アスペクト比を保ったまま、この枠内(画面内)に
+             * 「収まる(contain)」ように表示する
+             */
+            object-fit: contain; 
+        }
+    </style>
 </head>
 <body>
-    <div id="map"></div>
-    <div class="float-button" id="kigoButton">季語</div>
-    <div class="modal-overlay" id="haikuModal"><div class="modal-content"><h2 id="haikuModalTitle">一句、詠む</h2><div class="haiku-input-container"><textarea class="haiku-input-area" id="shimoNoKuInput" placeholder="下 の 句" maxlength="10"></textarea><textarea class="haiku-input-area" id="nakaNoKuInput" placeholder="中 の 句" maxlength="10"></textarea><textarea class="haiku-input-area" id="kamiNoKuInput" placeholder="上 の 句" maxlength="10"></textarea></div><div class="modal-buttons"><button type="button" class="submit-haiku-button" id="submitHaiku">投稿</button><button type="button" class="cancel-button" id="cancelHaiku">取消</button></div></div></div>
-    <div class="modal-overlay" id="kigoModal"><div class="modal-content"><h2 id="kigoModalTitle">今の季語</h2><div id="kigoListContainer"></div><div class="modal-buttons"><button type="button" class="cancel-button" id="closeKigoModal">閉じる</button></div></div></div>
 
-    <script>
-        // --- ★ Firebase（データベース）設定 ---
-        const firebaseConfig = { apiKey: "AIzaSyAHJZka9pXIl4LUo_Xtt1S7aINMJVDVDb0", authDomain: "yomitama-6cb84.firebaseapp.com", projectId: "yomitama-6cb84", storageBucket: "yomitama-6cb84.appspot.com", messagingSenderId: "812764737990", appId: "1:812764737990:web:a88d864b7e4c130c3542c7" };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-    </script>
-    
-    <script>
-        // --- スポット設定（変更なし） ---
-        const spotLocations = {
-            "miharashidai": { pos: [ 250, 700 ], name: "見晴台で" }, 
-            "shinjiike":    { pos: [ 400, 300 ], name: "心字池で" }, 
-            "anmon":        { pos: [ 650, 500 ], name: "庵（いおり）で" } 
-        };
+        <img src="mogusaen_illustmap.jpg" alt="百草園 イラストマップ">
 
-      window.addEventListener('load', () => {
-            // --- HTML要素の取得（変更なし） ---
-            const mapElement = document.getElementById('map');
-            const kigoButton = document.getElementById('kigoButton');
-            const haikuModal = document.getElementById('haikuModal');
-            const kigoModal = document.getElementById('kigoModal');
-            const haikuModalTitle = document.getElementById('haikuModalTitle');
-            const kamiNoKuInput = document.getElementById('kamiNoKuInput');
-            const nakaNoKuInput = document.getElementById('nakaNoKuInput');
-            const shimoNoKuInput = document.getElementById('shimoNoKuInput');
-            const submitHaikuButton = document.getElementById('submitHaiku');
-            const cancelHaikuButton = document.getElementById('cancelHaiku');
-            const closeKigoModalButton = document.getElementById('closeKigoModal');
-
-            // --- 状態管理の変数（変更なし） ---
-            let allHaikuData = [];
-            let haikuMarkers = {};
-            let expandedMarker = null;
-            let currentSpotId = null;
-
-            // --- モーダル関数（変更なし） ---
-            const openModal = (modal) => modal.classList.add('is-visible');
-            const closeModal = (modal) => modal.classList.remove('is-visible');
-            const clearHaikuInputs = () => { kamiNoKuInput.value = ""; nakaNoKuInput.value = ""; shimoNoKuInput.value = ""; };
-
-            // --- 地図設定（変更なし） ---
-            const mapWidth = 4133;
-            const mapHeight = 4400;
-            const map = L.map(mapElement, {
-                crs: L.CRS.Simple,
-                zoomControl: false,
-             　　zoomSnap: 0,
-                maxZoom: 3
-            });
-            const bounds = [ [0, 0], [mapHeight, mapWidth] ]; 
-            const mapImageUrl = 'mogusaen_illustmap.jpg';
-            L.imageOverlay(mapImageUrl, bounds).addTo(map);
-     /* 画像の「範囲外」には移動できないように設定
-            map.setMaxBounds(bounds);
-
-            // 3.「bounds全体がピッタリ収まるズームレベル」をLeafletに計算させる
-            const minZoomLevel = map.getBoundsZoom(bounds, true); 
-
-            // 4.「計算したズームレベル」を「最小ズーム」として設定
-            map.setMinZoom(minZoomLevel);
-
-            // 5.「boundsの中心」と「計算したズームレベル」で初期表示を実行
-            map.setView( [mapHeight / 2, mapWidth / 2], minZoomLevel );*/
-            
-            // --- QRラリーのロジック（変更なし） ---
-            const urlParams = new URLSearchParams(window.location.search);
-            const spotId = urlParams.get('spot');
-            if (spotId && spotLocations[spotId]) {
-                currentSpotId = spotId; 
-                const spotData = spotLocations[spotId];
-                map.setView(spotData.pos, 1); 
-                haikuModalTitle.textContent = `${spotData.name} 一句、詠む`;
-                openModal(haikuModal);
-            }
-
-            // --- 「いいね」機能（変更なし） ---
-            const getLikedHaikuIds = () => { const ids = localStorage.getItem('yomitama_liked_ids'); return ids ? JSON.parse(ids) : []; };
-            const addHaikuId = (id) => { const ids = getLikedHaikuIds(); if (!ids.includes(id)) { ids.push(id); localStorage.setItem('yomitama_liked_ids', JSON.stringify(ids)); } };
-            const isHaikuLiked = (id) => getLikedHaikuIds().includes(id);
-
-            // --- マップピンのサイズ計算（変更なし） ---
-            const getElementSize = (html, className) => {
-                const el = document.createElement('div');
-                el.style.position = 'absolute'; el.style.visibility = 'hidden'; el.style.left = '-9999px'; el.className = className; el.innerHTML = html;
-                document.body.appendChild(el);
-                const size = { width: el.offsetWidth, height: el.offsetHeight };
-                document.body.removeChild(el);
-                return size;
-            };
-
-            // --- ★★★【変更点①】ピンを「ズラす（Jitter）」処理 ★★★
-            function addHaikuToMap(haikuData) {
-                const { id, kami, naka, shimo, pos, likes } = haikuData; 
-                
-                // --- ↓ここから追加↓ ---
-                // 元の座標から、ほんの少し（-5px〜+5px）ランダムにズラす
-                // ※値(10)は、ズラす幅です。お好みで調整してください。
-                const jitterY = pos.y + (Math.random() - 0.5) * 10;
-                const jitterX = pos.x + (Math.random() - 0.5) * 10;
-                // --- ↑ここまで追加↑ ---
-                
-                const tailHeight = 10;
-                const iconHtml = `<div class="haiku-marker-body"><div class="haiku-tategaki"><span class="kami">${kami}</span><span class="naka-shimo-wrapper"><span class="naka">${naka}</span><span class="shimo">${shimo}</span></span></div><div class="haiku-actions"><button class="like-button" data-id="${id}">❤</button><span class="like-count">${likes}</span></div></div>`;
-                const initialHtmlForSizing = `<div class="haiku-marker-body"><div class="haiku-tategaki"><span class="kami">${kami}</span></div></div>`;
-                const contentSize = getElementSize(initialHtmlForSizing, '');
-                const iconWidth = contentSize.width;
-                const iconTotalHeight = contentSize.height + tailHeight;
-
-                const haikuIcon = L.divIcon({
-                    className: 'haiku-marker',
-                    html: iconHtml,
-                    iconSize: [iconWidth, iconTotalHeight],
-                    iconAnchor: [iconWidth / 2, iconTotalHeight],
-                });
-                
-                // ★★★ L.marker の座標を、ズラした [jitterY, jitterX] に変更 ★★★
-                const marker = L.marker([jitterY, jitterX], {icon: haikuIcon}).addTo(map); 
-                marker.haikuId = id;
-                haikuMarkers[id] = marker;
-
-                // --- ピンのクリックイベント (変更なし) ---
-                marker.on('click', (e) => {
-                    L.DomEvent.stopPropagation(e);
-                    if (expandedMarker && expandedMarker !== marker) {
-                        expandedMarker.getElement().classList.remove('expanded');
-                    }
-                    const element = marker.getElement();
-                    element.classList.toggle('expanded');
-                    if (element.classList.contains('expanded')) { expandedMarker = marker; } else { expandedMarker = null; }
-                });
-
-                // --- いいねボタンの処理 (変更なし) ---
-                marker.on('add', () => {
-                    const el = marker.getElement();
-                    L.DomEvent.disableClickPropagation(el);
-                    const likeButton = el.querySelector('.like-button');
-                    const likeCountSpan = el.querySelector('.like-count');
-                    if (isHaikuLiked(id)) { likeButton.classList.add('liked'); likeButton.disabled = true; likeButton.textContent = '済'; }
-                    likeButton.addEventListener('click', (e) => {
-                        L.DomEvent.stopPropagation(e);
-                        if (isHaikuLiked(id)) return;
-                        const docRef = db.collection("haiku").doc(id);
-                        db.runTransaction((transaction) => {
-                            return transaction.get(docRef).then((doc) => {
-                                if (!doc.exists) { throw "Document does not exist!"; }
-                                const newLikes = (doc.data().likes || 0) + 1;
-                                transaction.update(docRef, { likes: newLikes });
-                                return newLikes;
-                            });
-                        }).then((newLikes) => {
-                            addHaikuId(id);
-                            likeCountSpan.textContent = newLikes;
-                            likeButton.classList.add('liked');
-                            likeButton.disabled = true;
-                            likeButton.textContent = '済';
-                        }).catch((error) => console.error("Transaction failed: ", error));
-                    });
-                });
-            }
-            
-            // マップクリック（変更なし）
-            map.on('click', () => {
-                if (expandedMarker) {
-                    expandedMarker.getElement().classList.remove('expanded');
-                    expandedMarker = null;
-                }
-            });
-
-            // --- ★★★【変更点②】「最新200件」だけを読み込む ★★★
-            db.collection("haiku")
-              .orderBy("createdAt", "desc") // ★「asc」（古い順）から「desc」（新しい順）に変更
-              .limit(200)                  // ★「最新200件まで」という制限を追加
-              .onSnapshot((querySnapshot) => {
-                
-                // 変更があった俳句だけを処理する
-                querySnapshot.docChanges().forEach((change) => {
-                    const doc = change.doc;
-                    const data = doc.data();
-                    const haikuData = { id: doc.id, kami: data.kami, naka: data.naka, shimo: data.shimo, pos: data.pos, likes: data.likes };
-                    
-                    if (change.type === "added") { // 新しい句が追加された
-                        if(haikuData.pos && !haikuMarkers[haikuData.id]) { // pos があり、まだマップに無い場合
-                            addHaikuToMap(haikuData);
-                            allHaikuData.push(haikuData);
-                        }
-                    }
-                    if (change.type === "modified") { // 「いいね」が押された
-                        const marker = haikuMarkers[doc.id];
-                        if (marker) {
-                            const el = marker.getElement();
-                            if (el) { el.querySelector('.like-count').textContent = data.likes; }
-                        }
-                        const index = allHaikuData.findIndex(h => h.id === doc.id);
-                        if (index > -1) { allHaikuData[index].likes = data.likes; }
-                    }
-                    if (change.type === "removed") { // （200件を超えて）古い句がリストから削除された
-                        const marker = haikuMarkers[doc.id];
-                        if (marker) {
-                            map.removeLayer(marker); // マップからピンを削除
-                            delete haikuMarkers[doc.id]; // 管理リストからも削除
-                        }
-                        allHaikuData = allHaikuData.filter(h => h.id !== doc.id);
-                    }
-                });
-            });
-
-            // --- 投稿処理（変更なし） ---
-            submitHaikuButton.addEventListener('click', () => {
-                const kamiNoKu = kamiNoKuInput.value.trim();
-                const nakaNoKu = nakaNoKuInput.value.trim();
-                const shimoNoKu = shimoNoKuInput.value.trim();
-                if (kamiNoKu === "" || nakaNoKu === "" || shimoNoKu === "") { alert("すべての句を入力してください。"); return; }
-                if (!currentSpotId) { alert("投稿場所が特定できません。\n園内のQRコードから再度読み込んでください。"); return; }
-                const postLocation = spotLocations[currentSpotId]; 
-                db.collection("haiku").add({
-                    kami: kamiNoKu, 
-                    naka: nakaNoKu, 
-                    shimo: shimoNoKu, 
-                    pos: { y: postLocation.pos[0], x: postLocation.pos[1] }, 
-                    spotName: currentSpotId, 
-                    likes: 0, 
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                }).then(() => {
-                    closeModal(haikuModal);
-                    currentSpotId = null; 
-                    setTimeout(clearHaikuInputs, 300);
-                    map.fitBounds(bounds); 
-                }).catch((error) => {
-                    console.error("Error writing document: ", error);
-                    alert("投稿に失敗しました。");
-                });
-            });
-            
-            // --- 季語ボタン（変更なし） ---
-            kigoButton.addEventListener('click', () => {
-                const kigoData = { 
-                    1: ["正月", "初詣", "寒椿"], 2: ["梅", "春一番", "立春"], 3: ["雛祭り", "蝶", "春分"], 
-                    4: ["花見", "桜", "燕"], 5: ["鯉のぼり", "新緑", "田植え"], 6: ["梅雨", "紫陽花", "蛍"], 
-                    7: ["七夕", "風鈴", "蝉"], 8: ["盆", "向日葵", "雷"], 9: ["月見", "鈴虫", "台風"], 
-                    10: ["紅葉", "秋祭り", "運動会"], 
-                    11: ["七五三", "木枯らし", "焚き火", "紅葉(もみじ)", "落葉", "小春日和"], 
-                    12: ["クリスマス", "大晦日", "雪"] 
-                };
-                const kigoModalTitle = document.getElementById('kigoModalTitle');
-                const kigoListContainer = document.getElementById('kigoListContainer');
-                const month = new Date().getMonth() + 1; 
-                kigoModalTitle.textContent = `${month}月の季語`;
-                kigoListContainer.innerHTML = '';
-                const kigoList = kigoData[month] || [];
-                if (kigoList.length > 0) {
-                    const ul = document.createElement('ul');
-                    kigoList.forEach(kigo => { const li = document.createElement('li'); li.textContent = kigo; ul.appendChild(li); });
-                    kigoListContainer.appendChild(ul);
-                } else {
-                    kigoListContainer.textContent = '該当する季語がありません。';
-                }
-                openModal(kigoModal);
-            });
-
-            // --- モーダルを閉じる処理（変更なし） ---
-            cancelHaikuButton.addEventListener('click', () => { 
-                closeModal(haikuModal); 
-                currentSpotId = null; 
-                setTimeout(clearHaikuInputs, 300); 
-            });
-            closeKigoModalButton.addEventListener('click', () => { closeModal(kigoModal); });
-            [haikuModal, kigoModal].forEach(modal => { 
-                modal.addEventListener('click', (e) => { 
-                    if (e.target === modal) { 
-                        closeModal(modal); 
-                        if(modal === haikuModal) { currentSpotId = null; setTimeout(clearHaikuInputs, 300); }
-                    } 
-                }); 
-            });
-        });
-    </script>
-</body>
+    </body>
 </html>
