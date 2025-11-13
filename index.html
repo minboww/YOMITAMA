@@ -225,7 +225,7 @@
             });
             // --- ★★★ 修正点① ここまで ★★★ ---
 
-            const bounds = [ [0, 0], [mapHeight, mapWidth] ]; 
+            const bounds = [ [mapHeight, 0], [0, mapWidth] ]; 
             const mapImageUrl = 'mogusaen_illustmap.jpg';
             L.imageOverlay(mapImageUrl, bounds).addTo(map);
 
