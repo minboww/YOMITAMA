@@ -46,7 +46,7 @@
         backdrop-filter: blur(6px);
         border: 1px solid rgba(85, 107, 47, 0.7);
         border-radius: 8px;
-        padding: 10px 6px;
+        padding: 10px 10px;
         box-shadow: 0 3px 8px var(--shadow-color);
         display: flex;
         flex-direction: column;
@@ -59,7 +59,6 @@
     .haiku-tategaki { writing-mode: vertical-rl; text-orientation: mixed; white-space: nowrap; font-size: 16px; font-weight: bold; color: var(--base-text-color); letter-spacing: 0.1em; line-height: 1.7; transition: all 0.3s ease-in-out; }
     .naka-shimo-wrapper { display: inline-block; max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out 0.1s; margin: 0; padding: 0; }
     .kami, .naka, .shimo { display: inline-block; }
-    .naka { margin-right: 0.8em; }
     .haiku-actions {
         display: flex;
         flex-direction: row;
@@ -74,7 +73,7 @@
     .like-button { background-color: #ffefff; border: 1px solid #e1bee7; color: #8e24aa; padding: 5px 10px; border-radius: 15px; cursor: pointer; font-family: var(--font-sans); font-size: 14px; transition: background-color 0.2s; white-space: nowrap; }
     .like-button.liked, .like-button:disabled { background-color: e1bee7; color: white; cursor: not-allowed; }
     .like-count { font-family: var(--font-sans); font-weight: bold; font-size: 16px; color: #6a6a6a; }
-    .haiku-marker.expanded .haiku-marker-body { padding: 12px 10px; }
+    .haiku-marker.expanded .haiku-marker-body { padding: 0; }
     .haiku-marker.expanded .naka-shimo-wrapper { max-height: 20em; opacity: 1; }
     .haiku-marker.expanded .haiku-actions { max-height: 50px; opacity: 1; }
     
@@ -318,30 +317,30 @@
 
                 // --- いいねボタンの処理 (変更なし) ---
                 marker.on('add', () => {
-                    const el = marker.getElement();
-                    L.DomEvent.disableClickPropagation(el);
-                    const likeButton = el.querySelector('.like-button');
-                    const likeCountSpan = el.querySelector('.like-count');
-                    if (isHaikuLiked(id)) { likeButton.classList.add('liked'); likeButton.disabled = true; likeButton.textContent = '済'; }
-                    likeButton.addEventListener('click', (e) => {
-                        L.DomEvent.stopPropagation(e);
-                        if (isHaikuLiked(id)) return;
-                        const docRef = db.collection("haiku").doc(id);
-                        db.runTransaction((transaction) => {
-                            return transaction.get(docRef).then((doc) => {
-                                if (!doc.exists) { throw "Document does not exist!"; }
-                                const newLikes = (doc.data().likes || 0) + 1;
-                                transaction.update(docRef, { likes: newLikes });
-                                return newLikes;
-                            });
-                        }).then((newLikes) => {
-                            addHaikuId(id);
-                            likeCountSpan.textContent = newLikes;
-                            likeButton.classList.add('liked');
-                            likeButton.disabled = true;
-                            likeButton.textContent = '済';
-                        }).catch((error) => console.error("Transaction failed: ", error));
-                    });
+             // addEventListener の代わりに L.DomEvent.on を使う
+                    L.DomEvent.on(likeButton, 'click', (e) => {
+                        // L.DomEvent.stop は stopPropagation と preventDefault の両方を実行し、
+                        // マーカーへのイベント伝播を確実に停止させます。
+                        L.DomEvent.stop(e); 
+                        
+                        if (isHaikuLiked(id)) return;
+                        
+                        const docRef = db.collection("haiku").doc(id);
+                        db.runTransaction((transaction) => {
+                            return transaction.get(docRef).then((doc) => {
+                                if (!doc.exists) { throw "Document does not exist!"; }
+                                const newLikes = (doc.data().likes || 0) + 1;
+                                transaction.update(docRef, { likes: newLikes });
+                                return newLikes;
+                            });
+                        }).then((newLikes) => {
+                            addHaikuId(id);
+                            likeCountSpan.textContent = newLikes;
+                            likeButton.classList.add('liked');
+                            likeButton.disabled = true;
+                            likeButton.textContent = '済';
+                        }).catch((error) => console.error("Transaction failed: ", error));
+                    });
                 });
             }
             
