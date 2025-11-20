@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ヨミタマ</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -80,7 +80,6 @@
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--overlay-color); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; padding: 0 15px; box-sizing: border-box; }
     .modal-overlay.is-visible { opacity: 1; visibility: visible; }
     
-    /* ★★★ 修正点① (モーダル自体の設定) ★★★ */
     .modal-content { 
         background-color: var(--bg-color); 
         padding: 30px; 
@@ -92,36 +91,31 @@
         transform: translateY(20px); 
         transition: transform 0.3s ease-out; 
         
-        /* ↓ スクロール対応のために必須 (4行) */
         display: flex; 
         flex-direction: column;
-        max-height: 80vh; /* 画面の高さの80%を上限に */
-        overflow: hidden; /* この中で子がスクロールするように */
+        max-height: 80vh; 
+        overflow: hidden; 
     }
     .modal-overlay.is-visible .modal-content { transform: translateY(0); }
     .modal-content h2 { 
         margin-top: 0; 
         font-size: 24px; 
         color: var(--base-text-color); 
-        /* ↓ スクロール対応 (縮まないように) */
         flex-shrink: 0; 
     }
 
-    /* ★★★ 修正点② (季語リストのコンテナ) ★★★ */
     #kigoListContainer { 
         text-align: left; 
         font-family: var(--font-sans); 
         list-style-position: inside; 
         
-        /* ↓ スクロール対応のために必須 (3行) */
-        overflow-y: auto; /* 内容が多ければスクロール */
-        flex: 1; /* flexコンテナ内で残りのスペースをすべて使う */
-        min-height: 0; /* 高さが0になれるようにし、縮小を許可 */
+        overflow-y: auto; 
+        flex: 1; 
+        min-height: 0; 
 
         padding-right: 15px; 
     }
     
-    /* (季語リスト用のスタイル) */
     #kigoListContainer h3 {
         font-family: var(--font-serif);
         color: var(--primary-color);
@@ -152,10 +146,8 @@
     .haiku-input-area { writing-mode: vertical-rl; text-orientation: upright; height: 160px; width: 45px; padding: 12px; font-size: 18px; font-family: inherit; border: 1px solid var(--light-gray-color); border-radius: 6px; resize: none; white-space: pre; overflow: hidden; background-color: var(--white-color); transition: border-color 0.2s, box-shadow 0.2s; }
     .haiku-input-area:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(85, 107, 47, 0.2); }
     
-    /* ★★★ 修正点③ (ボタン領域) ★★★ */
     .modal-buttons { 
         margin-top: 25px; 
-        /* ↓ スクロール対応 (縮まないように) */
         flex-shrink: 0;
     }
     .modal-buttons button { padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; border: none; font-family: var(--font-sans); font-weight: bold; transition: opacity 0.2s; }
@@ -170,14 +162,14 @@
     <div class="modal-overlay" id="kigoModal"><div class="modal-content"><h2 id="kigoModalTitle">今の季語</h2><div id="kigoListContainer"></div><div class="modal-buttons"><button type="button" class="cancel-button" id="closeKigoModal">閉じる</button></div></div></div>
 
     <script>
-        // --- ★ Firebase（データベース）設定 --- (変更なし)
+        // --- ★ Firebase（データベース）設定 ---
         const firebaseConfig = { apiKey: "AIzaSyAHJZka9pXIl4LUo_Xtt1S7aINMJVDVDb0", authDomain: "yomitama-6cb84.firebaseapp.com", projectId: "yomitama-6cb84", storageBucket: "yomitama-6cb84.appspot.com", messagingSenderId: "812764737990", appId: "1:812764737990:web:a88d864b7e4c130c3542c7" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
     </script>
     
     <script>
-        // --- スポット設定（変更なし） ---
+        // --- スポット設定 ---
         const spotLocations = {
             "a": { pos: [ 1371, 1349 ], name: "三檪庵で" }, 
             "b":    { pos: [ 1560, 2591 ], name: "ここで" }, 
@@ -186,322 +178,4 @@
             "e":    { pos: [ 2740, 2996 ], name: "見晴台で" }, 
             "f":        { pos: [ 3000, 1769 ], name: "見晴台で" } ,
              "g": { pos: [ 2536, 1521 ], name: "芭蕉句碑で" }, 
-            "h":    { pos: [ 2164, 1925 ], name: "心字池で" }, 
-            "i":        { pos: [ 1208, 3160 ], name: "ここで" } ,
-            "j":        { pos: [ 863, 2564 ], name: "広場で" } ,
-            "k":        { pos: [ 1108, 2229 ], name: "あずまやで" } ,
-            "l":        { pos: [ 650, 500 ], name: "庵（いおり）で" } 
-        };
-
-      window.addEventListener('load', () => {
-            // --- HTML要素の取得（変更なし） ---
-            const mapElement = document.getElementById('map');
-            const kigoButton = document.getElementById('kigoButton');
-            const haikuModal = document.getElementById('haikuModal');
-            const kigoModal = document.getElementById('kigoModal');
-            const haikuModalTitle = document.getElementById('haikuModalTitle');
-            const kamiNoKuInput = document.getElementById('kamiNoKuInput');
-            const nakaNoKuInput = document.getElementById('nakaNoKuInput');
-            const shimoNoKuInput = document.getElementById('shimoNoKuInput');
-            const submitHaikuButton = document.getElementById('submitHaiku');
-            const cancelHaikuButton = document.getElementById('cancelHaiku');
-            const closeKigoModalButton = document.getElementById('closeKigoModal');
-
-            // --- 状態管理の変数（変更なし） ---
-            let allHaikuData = [];
-            let haikuMarkers = {};
-            let expandedMarker = null;
-            let currentSpotId = null;
-
-            // --- モーダル関数（変更なし） ---
-            const openModal = (modal) => modal.classList.add('is-visible');
-            const closeModal = (modal) => modal.classList.remove('is-visible');
-            const clearHaikuInputs = () => { kamiNoKuInput.value = ""; nakaNoKuInput.value = ""; shimoNoKuInput.value = ""; };
-
-            // --- 地図設定（変更なし） ---
-            const mapWidth = 4133;
-            const mapHeight = 4400;
-
-            // --- ★★★ 修正点① ★★★ ---
-            // minZoom: -1 を追加して、縮小できるようにする
-            const map = L.map(mapElement, {
-                crs: L.CRS.Simple,
-                zoomControl: false,
-                zoomSnap: 0,
-                maxZoom: 3,
-                minZoom: -3 // ★ 縮小できるように最小ズームを設定
-            });
-            // --- ★★★ 修正点① ここまで ★★★ ---
-
-            const bounds = [ [mapHeight, 0], [0, mapWidth] ]; 
-            const mapImageUrl = 'mogusaen_illustmap.jpg';
-            L.imageOverlay(mapImageUrl, bounds).addTo(map);
-
-            // --- QRラリーのロジック と 地図の初期表示 ---
-            const urlParams = new URLSearchParams(window.location.search);
-            const spotId = urlParams.get('spot');
-            
-            if (spotId && spotLocations[spotId]) {
-                // (A) QRコードが指定されている場合：その場所にズーム
-                currentSpotId = spotId; 
-                const spotData = spotLocations[spotId];
-                map.setView(spotData.pos, 1); 
-                haikuModalTitle.textContent = `${spotData.name} 一句、詠む`;
-                openModal(haikuModal);
-
-            } else {
-                // (B) QRコードがない場合：地図全体を画面に収める
-                // これで「最初に地図の全体を見る」を実現
-                map.fitBounds(bounds);
-            }
-            
-            // 地図の「範囲外」には移動できないように設定
-            map.setMaxBounds(bounds);
-            
-            // --- ★★★ 修正点② ★★★ ---
-            // 以下の1行を削除 (これが「縮小できない」原因でした)
-            // map.setMinZoom(map.getBoundsZoom(bounds, true)); 
-            // --- ★★★ 修正点② ここまで ★★★ ---
-
-
-            // --- 「いいね」機能（変更なし） ---
-            const getLikedHaikuIds = () => { const ids = localStorage.getItem('yomitama_liked_ids'); return ids ? JSON.parse(ids) : []; };
-            const addHaikuId = (id) => { const ids = getLikedHaikuIds(); if (!ids.includes(id)) { ids.push(id); localStorage.setItem('yomitama_liked_ids', JSON.stringify(ids)); } };
-            const isHaikuLiked = (id) => getLikedHaikuIds().includes(id);
-
-            // --- マップピンのサイズ計算（変更なし） ---
-            const getElementSize = (html, className) => {
-                const el = document.createElement('div');
-                el.style.position = 'absolute'; el.style.visibility = 'hidden'; el.style.left = '-9999px'; el.className = className; el.innerHTML = html;
-                document.body.appendChild(el);
-                const size = { width: el.offsetWidth, height: el.offsetHeight };
-                document.body.removeChild(el);
-                return size;
-            };
-
-            // --- ピンを「ズラす（Jitter）」処理（変更なし） ---
-            function addHaikuToMap(haikuData) {
-                const { id, kami, naka, shimo, pos, likes } = haikuData; 
-                
-                const jitterY = pos.y + (Math.random() - 0.5) * 250;
-                const jitterX = pos.x + (Math.random() - 0.5) * 250;
-                
-                const tailHeight = 10;
-                const iconHtml = `<div class="haiku-marker-body"><div class="haiku-tategaki"><span class="kami">${kami}</span><span class="naka-shimo-wrapper"><span class="naka">${naka}</span><span class="shimo">${shimo}</span></span></div><div class="haiku-actions"><button class="like-button" data-id="${id}">❤</button><span class="like-count">${likes}</span></div></div>`;
-                const initialHtmlForSizing = `<div class="haiku-marker-body"><div class="haiku-tategaki"><span class="kami">${kami}</span></div></div>`;
-                const contentSize = getElementSize(initialHtmlForSizing, '');
-                const iconWidth = contentSize.width;
-                const iconTotalHeight = contentSize.height + tailHeight;
-
-                const haikuIcon = L.divIcon({
-                    className: 'haiku-marker',
-                    html: iconHtml,
-                    iconSize: [iconWidth, iconTotalHeight],
-                    iconAnchor: [iconWidth / 2, iconTotalHeight],
-                });
-                
-                const marker = L.marker([jitterY, jitterX], {icon: haikuIcon}).addTo(map); 
-                marker.haikuId = id;
-                haikuMarkers[id] = marker;
-
-                // --- ピンのクリックイベント (変更なし) ---
-                marker.on('click', (e) => {
-                    L.DomEvent.stopPropagation(e);
-                    if (expandedMarker && expandedMarker !== marker) {
-                        expandedMarker.getElement().classList.remove('expanded');
-                    }
-                    const element = marker.getElement();
-                    element.classList.toggle('expanded');
-                    if (element.classList.contains('expanded')) { expandedMarker = marker; } else { expandedMarker = null; }
-                });
-
-                // --- いいねボタンの処理 (変更なし) ---
-                marker.on('add', () => {
-             // addEventListener の代わりに L.DomEvent.on を使う
-                    L.DomEvent.on(likeButton, 'click', (e) => {
-                        // L.DomEvent.stop は stopPropagation と preventDefault の両方を実行し、
-                        // マーカーへのイベント伝播を確実に停止させます。
-                        L.DomEvent.stop(e); 
-                        
-                        if (isHaikuLiked(id)) return;
-                        
-                        const docRef = db.collection("haiku").doc(id);
-                        db.runTransaction((transaction) => {
-                            return transaction.get(docRef).then((doc) => {
-                                if (!doc.exists) { throw "Document does not exist!"; }
-                                const newLikes = (doc.data().likes || 0) + 1;
-                                transaction.update(docRef, { likes: newLikes });
-                                return newLikes;
-                            });
-                        }).then((newLikes) => {
-                            addHaikuId(id);
-                            likeCountSpan.textContent = newLikes;
-                            likeButton.classList.add('liked');
-                            likeButton.disabled = true;
-                            likeButton.textContent = '済';
-                        }).catch((error) => console.error("Transaction failed: ", error));
-                    });
-                });
-            }
-            
-            // マップクリック（変更なし）
-            map.on('click', () => {
-                if (expandedMarker) {
-                    expandedMarker.getElement().classList.remove('expanded');
-                    expandedMarker = null;
-                }
-            });
-
-            // --- 「最新200件」だけを読み込む（変更なし） ---
-            db.collection("haiku")
-              .orderBy("createdAt", "desc") 
-              .limit(200)                  
-              .onSnapshot((querySnapshot) => {
-                
-                querySnapshot.docChanges().forEach((change) => {
-                    const doc = change.doc;
-                    const data = doc.data();
-                    const haikuData = { id: doc.id, kami: data.kami, naka: data.naka, shimo: data.shimo, pos: data.pos, likes: data.likes };
-                    
-                    if (change.type === "added") {
-                        if(haikuData.pos && !haikuMarkers[haikuData.id]) {
-                            addHaikuToMap(haikuData);
-                            allHaikuData.push(haikuData);
-                        }
-                    }
-                    if (change.type === "modified") { 
-                        const marker = haikuMarkers[doc.id];
-                        if (marker) {
-                            const el = marker.getElement();
-                            if (el) { el.querySelector('.like-count').textContent = data.likes; }
-                        }
-                        const index = allHaikuData.findIndex(h => h.id === doc.id);
-                        if (index > -1) { allHaikuData[index].likes = data.likes; }
-                    }
-                    if (change.type === "removed") {
-                        const marker = haikuMarkers[doc.id];
-                        if (marker) {
-                            map.removeLayer(marker); 
-                            delete haikuMarkers[doc.id]; 
-                        }
-                        allHaikuData = allHaikuData.filter(h => h.id !== doc.id);
-                    }
-                });
-            });
-
-            // --- 投稿処理（変更なし） ---
-            submitHaikuButton.addEventListener('click', () => {
-                const kamiNoKu = kamiNoKuInput.value.trim();
-                const nakaNoKu = nakaNoKuInput.value.trim();
-                const shimoNoKu = shimoNoKuInput.value.trim();
-                if (kamiNoKu === "" || nakaNoKu === "" || shimoNoKu === "") { alert("すべての句を入力してください。"); return; }
-                if (!currentSpotId) { alert("投稿場所が特定できません。\n園内のQRコードから再度読み込んでください。"); return; }
-                const postLocation = spotLocations[currentSpotId]; 
-                db.collection("haiku").add({
-                    kami: kamiNoKu, 
-                    naka: nakaNoKu, 
-                    shimo: shimoNoKu, 
-                    pos: { y: postLocation.pos[0], x: postLocation.pos[1] }, 
-                    spotName: currentSpotId, 
-                    likes: 0, 
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                }).then(() => {
-                    closeModal(haikuModal);
-                    currentSpotId = null; 
-                    setTimeout(clearHaikuInputs, 300);
-                    map.fitBounds(bounds); // 投稿後は全体表示に戻す
-                }).catch((error) => {
-                    console.error("Error writing document: ", error);
-                    alert("投稿に失敗しました: " + error);
-                });
-            });
-
-            // --- モーダル閉じるイベント（変更なし） ---
-            cancelHaikuButton.addEventListener('click', () => {
-                closeModal(haikuModal);
-                currentSpotId = null; 
-                setTimeout(clearHaikuInputs, 300);
-            });
-            closeKigoModalButton.addEventListener('click', () => closeModal(kigoModal));
-      // 季語ボタンのクリックイベント
-            kigoButton.addEventListener('click', () => {
-                // 挿入するHTMLを作成
-                const kigoHtml = `
-                    <h3>秋（三秋）の時候</h3>
-                    <p>秋（あき） ／ 秋麗（あきうらら） ／ 秋澄む（あきすむ） ／ 秋の朝（あきのあさ） ／ 秋の暮（あきのくれ） ／ 秋の昼（あきのひる） ／ 秋の夜（あきのよ） ／ 秋気（しゅうき） ／ 身に染みる（みにしみる） ／ 秋旱（あきひでり） ／ 律の調べ（りちのしらべ） ／ 爽やか（さわやか）</p>
-                    <h4>初秋の時候</h4>
-                    <p>秋めく（あきめく） ／ 残暑（ざんしょ） ／ 新涼（しんりょう） ／ 八月（はちがつ） ／ 初秋（はつあき） ／ 文月（ふづき） ／ 八月尽（はちがつじん）</p>
-                    <h4>仲秋の時候</h4>
-                    <p>九月（くがつ） ／ 秋冷（しゅうれい） ／ 仲秋（ちゅうしゅう） ／ 葉月（はづき） ／ 八朔（はっさく） ／ 夜長（よなが） ／ 秋社（しゅうしゃ） ／ かりがね寒い（かりがねさむい） ／ 龍淵に潜む（りゅうふちにひそむ） ／ 二百十日（にひゃくとおか） ／ 九月尽（くがつじん） ／ 長月尽（ながつきじん）</p>
-                    <h4>晩秋の時候</h4>
-                    <p>秋惜しむ（あきおしむ） ／ 秋寒い（あきさむい） ／ 秋深い（あきふかい） ／ 朝寒（あささむ） ／ 長月（ながつき） ／ 十月尽（じゅうがつじん） ／ 秋尽きる（あきつきる） ／ 暮の秋（くれのあき） ／ 十月（じゅうがつ） ／ 冷まじ（すさまじ） ／ そぞろ寒（そぞろさむ） ／ 肌寒（はださむ） ／ 晩秋（ばんしゅう） ／ 冬近い（ふゆちかい） ／ 漸寒（ややさむ） ／ 行く秋（ゆくあき） ／ 夜寒（よさむ） ／ 秋土用（あきどよう）</p>
-                    <hr>
-                    <h3>秋の天文</h3>
-                    <h4>三秋の天文</h4>
-                    <p>秋高い（あきたかい） ／ 秋の声（あきのこえ） ／ 秋の空（あきのそら） ／ 秋晴（あきばれ） ／ 稲妻（いなずま） ／ 霧（きり） ／ 竜田姫（たつたひめ） ／ 露（つゆ） ／ 釣瓶落し（つるべおとし） ／ 秋曇（あきぐもり） ／ 秋の色（あきのいろ） ／ 秋の霞（あきのかすみ） ／ 秋湿（あきじめり）</p>
-                    <h4>仲秋の天文</h4>
-                    <p>宵闇（よいやみ） ／ 良夜（りょうや）</p>
-                    <h4>晩秋の天文</h4>
-                    <p>秋の霜（あきのしも） ／ 露寒（つゆさむ）</p>
-                    <hr>
-                    <h3>秋の地理</h3>
-                    <h4>三秋の地理</h4>
-                    <p>秋の海（あきのうみ） ／ 秋の川（あきのかわ） ／ 秋の潮（あきのしお） ／ 秋の野（あきのの） ／ 秋の水（あきのみず） ／ 秋の山（あきのやま） ／ 花野（はなの） ／ 水澄む（みずすむ） ／ 秋園（しゅうえん） ／ 秋の狩場（あきのかりば） ／ 秋の湖（あきのうみ） ／ 秋の池（あきのいけ） ／ 秋の土（あきのつち） ／ 秋の沼（あきのぬま） ／ 花畠（はなばたけ）</p>
-                    <h4>初秋の地理</h4>
-                    <p>秋出水（あきでみず） ／ 盆波（ぼんなみ）</p>
-                    <h4>仲秋の地理</h4>
-                    <p>秋の田（あきのた） ／ 落し水（おとしみず） ／ 不知火（しらぬい） ／ 初潮（はつしお） ／ 高潮（たかしお）</p>
-                    <h4>晩秋の地理</h4>
-                    <p>刈田（かりた） ／ 穭田（ひつじだ） ／ 野山の錦（のやまのにしき） ／ 野山の色（のやまのいろ） ／ 枯野の色（かれののいろ）</p>
-                    <hr>
-                    <h3>秋の生活</h3>
-                    <h4>三秋の生活</h4>
-                    <p>秋の着物（あきのきもの） ／ 秋の灯（あきのひ） ／ 鰯引く（いわしひく） ／ 運動会（うんどうかい） ／ 枝豆（えだまめ） ／ 案山子（かかし） ／ 鹿火屋（かびや） ／ 砧（きぬた） ／ 牛蒡引く（ごぼうひく） ／ 鹿垣（ししがき） ／ 秋耕（しゅうこう） ／ 秋思（しゅうし） ／ 秋意（しゅうい） ／ 新米（しんまい） ／ 添水（そうず） ／ 燈火親しむ（とうかしたしむ） ／ 鳥威し（とりおどし） ／ 鳴子（なるこ） ／ 虫売（むしうri） ／ 夜食（やしょく） ／ 綿取（わたとり） ／ 秋の服（あきのふく） ／ 鱸膾（すずきなます） ／ 裂膾（さきなます） ／ 秋の宿（あきのやど） ／ 田守（たもり） ／ 新絹（しんぎぬ） ／ 烏賊干す（いかほす） ／ 虫籠（むしかご） ／ 秋の野遊び（あきののあそび） ／ 秋興（しゅうきょう） ／ 秋渇き（あきがわき） ／ 秋の大掃除（あきのおおそうじ） ／ 鶉合（うずらあわせ） ／ 鰻簗（うなぎやな） ／ 尾花の粥（おばなのかゆ） ／ 鎌帛（かましめ） ／ 雁の使（かりのつかい） ／ 後の二日灸（のちのふつかきゅう） ／ 美術展覧会（びじゅつてんらんかい） ／ 虫選（むしえらび） ／ 鵙落し（もずおとし） ／ 焼帛（やきしめ） ／ 猿酒（さるざけ） ／ 温麦（ぬるむぎ） ／ 夜学（やがく）</p>
-                    <h4>初秋の生活</h4>
-                    <p>秋扇（あきおうぎ） ／ 秋の蚊帳（あきのかや） ／ 蓮飯（はすめし） ／ 苧殻（おがら） ／ 踊（おどり） ／ 踊笠（おどりがさ） ／ 面輪板（おもわいた） ／ 梶の葉（かじのは） ／ 秋田竿燈まつり（あきたかんとうまつり） ／ 衣被（きぬかずき） ／ 休暇明（きゅうかあけ） ／ 草の市（くさのいち） ／ 山椒売（さんしょううり） ／ 終戦記念日（しゅうせんきねんび） ／ 震災記念日（しんさいきねんび） ／ 硯洗（すずりあらい） ／ 相撲（すもう） ／ 七夕祭（たなばたまつり） ／ 七種の御手向（しちしゅのおんたむけ） ／ 二星（にせい） ／ 牽牛星（けんぎゅうせい） ／ 織女星（しょくじょせい） ／ 七姫（ななひめ） ／ 鵲の橋（かささぎのはし） ／ 梶鞠（かじまり） ／ 中元（ちゅうげん） ／ 灯籠（とうろう） ／ 鳩吹（はとふき） ／ 盆休み（ぼんやすみ） ／ 盆用意（ぼんようい） ／ 真菰の馬（まこものうま） ／ 秋日傘（あきひがさ） ／ 小鷹狩（こたかがり） ／ 豇豆飯（ささげめし） ／ 鷹打（たかうち） ／ 妻迎舟（つまむかえぶね） ／ 庭木刈る（にわきかる） ／ 庭の立琴（にわのたてこと） ／ 八月大名（はちがつだいみょう） ／ 花火（はなび） ／ 星合（ほしあい） ／ 盆竈（ぼんがま） ／ 盆の掛乞（ぼんのかけごい） ／ 盆花（ぼんばな） ／ 盆路（ぼんみち） ／ 廻り灯籠（まわりどうろう） ／ 焼米（やきごめ） ／ 岐阜提灯（ぎふぢょうちん） ／ 残暑見舞（ざんしょみまい）</p>
-                    <h4>仲秋の生活</h4>
-                    <p>赤い羽根（あかいはね） ／ 秋袷（あきあわせ） ／ 鎌祝（かまいわい） ／ 秋蚕（あきご） ／ 秋簾（あきすだれ） ／ 秋蒔（あきまき） ／ 稲扱（いねこき） ／ 萱刈る（かやかる） ／ 凶作（きょうさく） ／ 薬掘る（くすりほる） ／ 下り梁（くだりやな） ／ 敬老の日（けいろうのひ） ／ 渋取（しぶとり） ／ 秋分の日（しゅうぶんのひ） ／ 障子洗う（しょうじあらう） ／ 新藁（しんわら） ／ 月見（つきみ） ／ 木賊刈る（とくさかる） ／ 稲架（はさ） ／ 八朔の祝（はっさくのいわい） ／ 八朔の節句（はっさくのせっく） ／ 豊年（ほうねん） ／ 籾（もみ） ／ 葡萄酒醸す（ぶどうしゅかもす） ／ 葭戸仕舞う（よしどしまう） ／ 粟刈る（あわかる） ／ 草花秋蒔く（くさばなあきまく） ／ 芍薬の株分（しゃくやくのかぶわけ） ／ 氷頭膾（ひずなます） ／ 胡麻刈る（ごまかる） ／ 鮞（はららご） ／ 草泊（くさどまり） ／ 竹伐る（たけきる） ／ 鯷漬（ひしこづけ） ／ 簟名残（たかむしろなごり） ／ 糸瓜の水取る（へちまのみずとる） ／ 鹿狩（しかがり） ／ 行水名残（ぎょうずいなごり） ／ とんぶり（とんぶり） ／ 秋の鵜飼（あきのうかい） ／ 秋のセル（あきのせる） ／ 秋の虫送り（あきのむしおくり） ／ 苺の株分（いちごのかぶわけ） ／ 馬市（うまいち） ／ 豌豆植える（えんどううえる） ／ 蚊帳に雁を描く（かやにかりをえがく） ／ 鴫の羽盛（しぎのはもり） ／ 蜾蠃追（すがれおい） ／ 木菟引（ずくひき） ／ 鱸釣る（すずきつる） ／ 大豆干す（だいずほす） ／ 御名残狂言（おなごりきょうげん） ／ 後の出代（のちのでがわり） ／ 袋洗（ふくろあらい） ／ 豆引く（まめひく） ／ 薯蕷掘る（やまのいもほる） ／ 夜蛤（よはまぐり） ／ 牡丹の株分（ぼたんのかぶわけ） ／ 濁り酒（にごりざけ） ／ 根釣（ねづり）</p>
-                    <h4>晩秋の生活</h4>
-                    <p>秋収（あきおさめ） ／ 葦刈（あしかり） ／ 温め酒（あたためざけ） ／ 稲刈（いねかり） ／ 芋煮会（いもにかい） ／ 囮（おとり） ／ 菊膾（きくなます） ／ 菊人形（きくにんぎょう） ／ 葛掘る（くずほる） ／ 崩れ梁（くずれやな） ／ 栗飯（くりめし） ／ 芸術祭（げいじゅつさい） ／ 古酒（ふるざけ） ／ 小鳥狩（ことりがり） ／ 鹿の角切（しかのつのきり） ／ 地芝居（じしばい） ／ 新酒（しんしゅ） ／ 新蕎麦（しんそば） ／ 新豆腐（しんとうふ） ／ 藁麦刈（そばかり） ／ スポーツの日（すぽーつのひ） ／ 高きに登る（たかきにのぼる） ／ 茸狩（きのこがり） ／ 種採（たねとり） ／ 重陽（ちょうよう） ／ 菊枕（きくまくら） ／ 菊展（きくてん） ／ 菊合（きくあわせ） ／ 菊襲（きくがさね） ／ 薯蕷汁（とろろじる） ／ 貝独楽（ばいごま） ／ 萩刈る（はぎかる） ／ 櫨ちぎり（はぜちぎり） ／ 冬支度（ふゆじたく） ／ 風炉の名残（ふろのなごり） ／ 文化の日（ぶんかのひ） ／ 松茸飯（まつたけめし） ／ 松手入（まつていれ） ／ 零余子飯（むかごめし） ／ 紅葉狩（もみじがり） ／ 柚味噌（ゆみそ） ／ 夜なべ（よなべ） ／ 栗羊羹（くりようかん） ／ 苦参引く（くららひく） ／ 菱取る（ひしとる） ／ 冬仕度（ふゆじたく） ／ 秋の炉（あきのろ） ／ 雁瘡（がんがさ） ／ 栗の子餅（くりのこもち） ／ 新綿（しんわた） ／ 蔓たぐり（つるたぐり） ／ 網代打（あじろうち） ／ 桑括る（くわくくる） ／ 夜庭（よにわ） ／ 鱲子（からすみ） ／ 柿羊羹（かきようかん） ／ 搗栗作る（かちぐりつくる） ／ 鱁鮧（うるか） ／ 柚餅子（ゆべし） ／ 俵編（たわらあみ） ／ 浅漬大根（あさづけだいこん） ／ 新麹（しんこうじ） ／ 火恋しい（ひこいしい） ／ 橡餅（とちもち） ／ 牧閉す（まきとざす） ／ 鰯の黒漬（いわしのくろづけ） ／ 芥子漬製する（からしづけせいする） ／ 球根秋植える（きゅうこんあきうえる） ／ 九日小袖（くにちこそで） ／ 茱萸の酒（ぐみのさけ） ／ 茱萸の袋（ぐみのふくろ） ／ 椎柴（しいしば） ／ 杉焼（すぎやき） ／ 蚕豆植える（そらまめうえる） ／ 後の更衣（のちのころもがえ） ／ 後の雛（のちのひな） ／ 松前帰る（まつまえかえる） ／ 柚醤（ゆびしお） ／ 鯊釣（はぜつり） ／ 中稲（なかて） ／ 干柿（ほしがき） ／ 藁塚（わらづか）</p>
-                    <hr>
-                    <h3>秋の行事</h3>
-                    <h4>三秋の行事</h4>
-                    <p>秋遍路（あきへんろ） ／ 秋祭（あきまつり）</p>
-                    <h4>初秋の行事</h4>
-                    <p>生身魂（いきみたま） ／ 盂蘭盆会（うらぼんえ） ／ おわら風の盆（おわらかぜのぼん） ／ 門火（かどび） ／ 解夏（げげ） ／ 地蔵盆（じぞうぼん） ／ 施餓鬼会（せがきえ） ／ 京都五山送り火（きょうとござんおくりび） ／ 燈籠流し（とうろうながし） ／ 墓参（はかまいり） ／ 猪俣の百八燈（いのまたのひゃくはっとう） ／ 百八炬（ひゃくはったい） ／ 盆狂言（ぼんきょうげん） ／ 吉田火祭（よしだひまつり） ／ 六斎念仏（ろくさいねんぶつ） ／ 六道参（ろくどうまいり） ／ 愛宕火（あたごび） ／ 鹿島祭（かしままつり） ／ 釜蓋朔日（かまぶたついたち） ／ 北野煤払（きたのすすはらい） ／ 北野御手水（きたのみちょうず） ／ 北野祭（きたのまつり） ／ 乞巧奠（きこうでん） ／ 逆の峯入（ぎゃくのみねいri） ／ 経木流（きょうぎながし） ／ 清水千日詣（きよみずせんにちもうで） ／ 刺鯖（さしさば） ／ 精霊火（しょうりょうび） ／ 水灯会（すいとうえ） ／ 数方庭祭（すほうていまつり） ／ 相撲の節（すもうのせち） ／ 摂待（せったい） ／ 薪寺の虫干（たきぎでらのむしぼし） ／ 玉取祭（たまとりまつり） ／ 竹生島祭（ちくぶしままつり） ／ 衝突入（つといり） ／ 戸隠祭（とがくしまつり） ／ 七日の御節供（なぬかのおんせちく） ／ 七日盆（なぬかぼん） ／ 新綿の奏（にいわたのそう） ／ 楸の葉を戴く（ひさぎのはをいただく） ／ 聖母聖心祭（せいぼせいしんさい） ／ 被昇天祭（ひしょうてんさい） ／ 深川祭（ふかがわまつり） ／ 奉灯会（ほうとうえ） ／ 星の薫物（ほしのたきもの） ／ 本願寺籠花（ほんがんじかごはな） ／ 盆綱引（ぼんつなひき） ／ 三井寺女詣（みいでらおんなもうで） ／ 御射山祭（みさやままつり） ／ 三島大祭（みしまおおまつり） ／ 祐天寺千部（ゆうてんじせんぶ） ／ 蘭盆勝会（らんぼんしょうえ） ／ 原爆忌（げんばくき） ／ 佞武多（ねぶた） ／ 大寺祭（おおでらまつり） ／ 王子権現祭（おうじごんげんさい） ／ 懸踊（かけおどり）</p>
-                    <h4>仲秋の行事</h4>
-                    <p>秋彼岸（あきひがん） ／ 芝神明祭（しばしんめいまつり） ／ 八幡放生会（やわたほうじょうえ） ／ 鶴岡祭（つるおかまつり） ／ 筥崎祭（はこざきまつり） ／ 天使祭（てんしさい） ／ 牡丹餅会式（ぼたもちえしき） ／ 秋の駒牽（あきのこまびき） ／ 宇佐放生会（うさほうじょうえ） ／ 泣角力（なきずもう） ／ 毛見（けみ） ／ 太宰府祭（だざいふまつり） ／ 聖母生誕祭（せいぼせいたんさい） ／ 愁思祭（しゅうしさい） ／ 北野芋茎祭（きたのずいきまつり） ／ 十字架祭（じゅうじかさい） ／ 円珍・乃木まつり（えんちん・のぎまつり） ／ 聖ミカエル祭（せいみかえるさい） ／ 司召の除目（つかさめしのじもく） ／ 秋の釈奠（あきのせきてん） ／ 秋季皇霊祭（しゅうきこうれいさい） ／ 大鳥祭（おおとりまつり） ／ 気比祭（けひまつり） ／ 定考（こうじょう） ／ 豊国神社例祭（とよくにじんじゃれいさい） ／ 二十六夜待（にじゅうろくやまち） ／ 野口大念仏会（のぐちだいねんぶつえ） ／ 日前國懸祭（ひのくまくにかかすのまつり） ／ 穂懸（ほかけ） ／ 菩薩祭（ぼさつまつり） ／ 松尾神事相撲（まつのおしんじすもう） ／ 吉野祭（よしのまつり） ／ 楽車祭（だんじりまつり）</p>
-                    <h4>晩秋の行事</h4>
-                    <p>くんち（くんち） ／ 太秦の牛祭（うずまさのうしまつり） ／ 鞍馬の火祭（くらまのひまつり） ／ 時代祭（じだいまつり） ／ 万聖節（ばんせいせつ） ／ 大津祭（おおつまつり） ／ 宝の市神事（たからのいちしんじ） ／ 不堪佃田の奏（ふかんでんでんのそう） ／ 金刀比羅祭（こんぴらまつり） ／ 穴織祭（あやはまつり） ／ 岩倉祭（いわくらまつり） ／ 諸霊祭（しょれいさい） ／ 伊勢御遷宮（いせごせんぐう） ／ ロザリオ祭（ろざりおさい） ／ 正倉院曝涼（しょうそういんばくりょう） ／ 城南祭（じょうなんまつり） ／ 国民体育大会（こくみんたいいくたいかい） ／ 丹生川上祭（にうかわかみまつり） ／ 例幣（れいへい） ／ 神嘗祭（かんなめさい） ／ 御会式（おえしき） ／ 秋の御灯（あきのごとう） ／ 阿濃津八幡祭（あのつはちまんまつり） ／ 粟田神社祭（あわたじんじゃまつり） ／ 石上祭（いそのかみまつり） ／ 大神神社祭（おおみわじんじゃまつり） ／ 岡崎祭（おかざきまつり） ／ 伎芸天慶讃法要（ぎげいてんけいさんほうよう） ／ 貴船の狭小神輿（きぶねのささみこし） ／ 御香宮神幸祭（ごこうのみやしんこうさい） ／ 皇后誕生日（こうごうたんじょうび） ／ 木幡祭（こはたまつり） ／ 春日祭（かすがまつり） ／ 逆髪祭（さかがみまつり） ／ 白川祭（しらかわまつり） ／ 新宮御船祭（しんぐうみふねまつり） ／ 住吉の神送（すみよしのかみおくり） ／ 聖体行列（せいたいぎょうれつ） ／ 泉涌寺舎利会（せんにゅうじしゃりえ） ／ 天王寺一乗会（てんのうじいちじょうえ） ／ 天満流鏑馬（てんまんやぶさめ） ／ 鳴滝祭（なるたきまつり） ／ 野の宮の別（ののみやのわかれ） ／ 八幡花の頭（やわたはなのとう） ／ 氷魚を賜う（ひおをたまう） ／ 伏見三栖祭（ふしみみすまつり） ／ 法隆寺夢殿秘仏開扉（ほうりゅうじゆめどのひぶつかいひ） ／ 宮崎祭（みやざきまつり） ／ 明恵上人献茶式（みょうえしょうにんけんちゃしき） ／ 靖国神社秋季大祭（やすくにじんじゃしゅうきたいさい） ／ 淀祭（よどまつり） ／ 御取越（おとりこし） ／ 神送り（かみおくり） ／ 菊供養（きくくよう） ／ 豊年ほぜ祭（ほうねんほぜまつり） ／ 山鹿灯籠祭（やまがとうろうまつり） ／ 道灌祭（どうかんまつり）</p>
-                    <hr>
-                    <h3>秋の動物</h3>
-                    <h4>三秋の動物</h4>
-                    <p>赤蜻蛉（あかとんぼ） ／ 秋鯖（あきさば） ／ 秋の蝶（あきのちょう） ／ 秋の蠅（あきのはえ） ／ 秋の蜂（あきのはち） ／ 秋繭（あきまゆ） ／ 稲雀（いなすずめ） ／ 色鳥（いろどり） ／ 鰯（いわし） ／ 鶉（うずら） ／ 馬肥える（うまこえる） ／ 浮塵子（うんか） ／ 落鮎（おちあゆ） ／ 鰍（かじか） ／ 石斑魚（うぐい） ／ 啄木鳥（きつつき） ／ 螻蛄鳴く（けらなく） ／ 蟋蟀（こおろぎ） ／ 鹿（しか） ／ 鴫（しぎ） ／ 鶺鴒（せきれい） ／ 鯊（はぜ） ／ 蓑虫（みのむし） ／ 蚯蚓鳴く（みみずなく） ／ 椋鳥（むくどり） ／ 虫（むし） ／ 鵙（もず） ／ 渡り鳥（わたりどり） ／ 小鷹（こたか） ／ 交喙鳥（いすか） ／ 入内雀（にゅうないすずめ） ／ 鵲（かささぎ） ／ 江鮭（あめのうお） ／ 黄顙魚（ぎぎ） ／ 秋鰹（あきかつお） ／ 宗太鰹（そうだがつお） ／ 秋鯵（あきあじ） ／ 鮗（このしろ） ／ 片口鰯（かたくちいわし） ／ 稚鰤（わらさ） ／ 太刀魚（たちうお） ／ 横這（よこばい） ／ 破殻（われから） ／ 菊吸虫（きくすいむし） ／ 菜虫（なむし） ／ 稲負鳥（いなおおせどり） ／ ぎぎう（ぎぎう） ／ 鴇（とき） ／ 七節（ななふし） ／ 螻蛄（けら） ／ 蜻蛉（とんぼ） ／ 栗鼠（りす） ／ 雀の担桶（すずめのたご） ／ 鷹渡る（たかわたる）</p>
-                    <h4>初秋の動物</h4>
-                    <p>秋の蚊（あきのか） ／ 秋の蝉（あきのせみ） ／ 秋の蛍（あきのほたる） ／ 蝗（いなご） ／ 芋虫（いもむし） ／ 馬追虫（うまおいむし） ／ 浮鮴（うきごり） ／ 鉦叩（かねたたき） ／ 蟷螂（かまきり） ／ 邯鄲（かんたん） ／ 螽蟖（きりぎりす） ／ 草雲雀（くさひばり） ／ 轡虫（くつわむし） ／ 鈴虫（すずむし） ／ 茶立虫（ちゃたてむし） ／ 飛蝗（ばった） ／ 蜩（ひぐらし） ／ 放屁虫（へひりむし） ／ つくつく法師（つくつくぼうし） ／ 松虫（まつむし） ／ 仙入（せんにゅう） ／ 鷹の山別れ（たかのやまわかれ） ／ 別烏（わかれがらす） ／ 刺虫（いらむし） ／ 鷹の塒出（たかのとやで） ／ 鰹の烏帽子（かつおのえぼし） ／ 荒鷹（あらたか） ／ 針金虫（はりがねむし）</p>
-                    <h4>仲秋の動物</h4>
-                    <p>竃馬（かまどうま） ／ 懸巣（かけす） ／ 雁（かり） ／ 鮭（さけ） ／ 鱸（すずき） ／ 田雲雀（たひばり） ／ 燕帰る（つばめかえる） ／ 初鴨（はつかも） ／ 鵯（ひよどり） ／ 鰡（ぼら） ／ 小鳥（ことり） ／ 海猫帰る（ごめかえる） ／ 秋の蛙（あきのかわず） ／ 猿子鳥（ましこどり） ／ 尾越の鴨（おごしのかも） ／ 赤鯥（あかむつ） ／ 蛇穴に入る（へびあなにいる）</p>
-                    <h4>晩秋の動物</h4>
-                    <p>猪（いのしし） ／ 尾花蛸（おばなだこ） ／ 蜉蝣（かげろう） ／ 栗虫（くりむし） ／ 秋刀魚（さんま） ／ 鶫（つぐみ） ／ 鶴来たる（つるきたる） ／ 尉鶲（じょうびたき） ／ 紅葉鮒（もみじぶな） ／ 頭高（かしらだか） ／ 鴲（しめ） ／ 落鮒（おちぶな） ／ 蜂の子（はちのこ） ／ ひいらぎ（ひいらぎ） ／ 落鰻（おちうなぎ） ／ 連雀（れんじゃく） ／ 落かいず（おちかいず） ／ 花咲蟹（はなさきがに） ／ 落鯛（おちだい） ／ 木葉山女（このはやまめ） ／ 坂鳥（さかどり） ／ 獦子鳥（あとり） ／ 熊栗架を掻く（くまくりだなをかく） ／ 雪迎え（ゆきむかえ） ／ 菊戴（きくいただき） ／ 紅葉鱮（もみじたなご） ／ 鶸（ひわ） ／ 残る虫（のこるむし）</p>
-                    <hr>
-                    <h3>秋の植物</h3>
-                    <h4>三秋の植物</h4>
-                    <p>青蜜柑（あおみかん） ／ 秋草（あきくさ） ／ 秋の七草（あきのななくさ） ／ 小豆（あずき） ／ 粟（あわ） ／ 牛膝（いのこずち） ／ 里芋（さといも） ／ 狗尾草（えのころぐさ） ／ 荻（おぎ） ／ 萱（かや） ／ カンナ（かんな） ／ 菊（きく） ／ 草の花（くさのはな） ／ 草の穂（くさのほ） ／ 草の実（くさのみ） ／ 葛（くず） ／ 鶏頭（けいとう） ／ 珊瑚樹の実（さんごじゅのみ） ／ 椎茸（しいたけ） ／ 山の芋（やまのいも） ／ 数珠玉（じゅずだま） ／ 生姜（しょうが） ／ 芒（すすき） ／ 蔦（つた） ／ 露草（つゆくさ） ／ 唐辛子（とうがらし） ／ 毒茸（どくきのこ） ／ 長薯（ながいも） ／ 梨（なし） ／ 葉鶏頭（はげいとう） ／ 初茸（はつたけ） ／ 糸瓜（へちま） ／ 弁慶草（べんけいそう） ／ 零余子（むかご） ／ 藪虱（やぶじらみ） ／ 藪人参（やぶにんじん） ／ 若煙草（わかたばこ） ／ 秋果（しゅうか） ／ 木天蓼（またたび） ／ 夜蒔胡瓜（よまききゅうり） ／ オクラ（おくら） ／ 仏掌薯（つくねいも） ／ 何首烏芋（かしゅういも） ／ 陸稲（おかぼ） ／ 白茅（ちがや） ／ 軒しのぶ（のきしのぶ） ／ 紅茸（べにたけ） ／ 猿の腰掛（さるのこしかけ） ／ 霊芝（れいし） ／ 川苔（かわのり） ／ 秋桑（あきくわ） ／ 雄日芝（おひしば） ／ 大角豆（ささげ）</p>
-                    <h4>初秋の植物</h4>
-                    <p>犬蓼（いぬたで） ／ 稲の花（いねのはな） ／ 隠元豆（いんげんまめ） ／ 鬱金の花（うこんのはな） ／ 男郎花（おとこえし） ／ 女郎花（おみなえし） ／ 桔梗（ききょう） ／ 桐の実（きりのみ） ／ 桐一葉（きりひとは） ／ 銀杏（いちょう） ／ 臭木の花（くさぎのはな） ／ 南五味子（さねかずら） ／ 葛の花（くずのはな） ／ 山椒の実（さんしょうのみ） ／ 馬鈴薯（じゃがいも） ／ 秋海棠（しゅうかいどう） ／ 蕎麦の花（そばのはな） ／ 大豆（だいず） ／ 蓼の花（たでのはな） ／ 煙草の花（たばこのはな） ／ 椿の実（つばきのみ） ／ 冬瓜（とうがん） ／ 刀豆（なたまめ） ／ 棗（なつめ） ／ 七竃（ななかまど） ／ 萩（はぎ） ／ 芭蕉（ばしょう） ／ 瓢（ふくべ） ／ 藤袴（ふじばかま） ／ 芙蓉（ふよう） ／ 鳳仙花（ほうせんか） ／ 鬼灯（ほおずき） ／ 木天蓼の実（またたびのみ） ／ 溝蕎麦（みぞそば） ／ 千屈菜（みそはぎ） ／ 茗荷の花（みょうがのはな） ／ 木槿（むくげ） ／ 郁子（むべ） ／ 目弾（めはじき） ／ 桃（もも） ／ 薮枯らし（やぶからし） ／ 夕顔の実（ゆうがおのみ） ／ 朝顔（あさがお） ／ 草牡丹（くさぼたん） ／ 模様莧（もようびゆ） ／ 釣鐘人参（つりがねにんじん） ／ 秋の芽（あきのめ） ／ ジンジャーの花（じんじゃーのはな） ／ 点突草（てんつきそう） ／ 金冬瓜（きんとうが） ／ 弟切草（おとぎりそう） ／ 茜草（あかねぐさ） ／ ホップ（ほっぷ） ／ 小水葱の花（こなぎのはな） ／ 楤の花（たらのはな） ／ 雀の稗（すずめのひえ） ／ 蔓紫（つるむらさき） ／ 沢桔梗（さわぎきょう） ／ 田村草（たむらそう） ／ 鼠の尾（ねずみのお） ／ 大文字草（だいもんじそう） ／ 山茱萸の実（さんしゅゆのみ） ／ 星草（ほしくさ） ／ 薄荷の花（はっかのはな） ／ 矢の根草（やのねぐさ） ／ 施覆花（おぐるま） ／ 鉄道草（てつどうぐさ） ／ 野稗（のびえ） ／ 葈耳の実（おなもみのみ） ／ 釣船草（つりふねそう） ／ 川芎の花（せんきゅうのはな） ／ 苔桃（こけもも） ／ 鳩麦（はとむぎ） ／ ぬめり草（ぬめりぐさ） ／ 仙翁花（せんのうげ） ／ 朝霧草（あさぎりそう） ／ 麻の実（あさのみ） ／ 岩蓮華（いわれんげ） ／ 鬼縛の実（おにしばりのみ） ／ 貝細工（かいざいく） ／ 帝王貝細工（かいざいく） ／ 蒲の絮（がまのわた） ／ サルビア（さるびあ） ／ 麝香草（じゃこうそう） ／ 椨の実（たぶのみ） ／ 唐胡麻（とうごま） ／ 巴草（ともえぐさ） ／ 錦草（にしきそう） ／ 浜茄子の実（はまなすのみ） ／ 鵯花（ひよどりばな） ／ 富士薊（ふじあざみ） ／ 藪蘭（やぶらん） ／ 西瓜（すいか） ／ 撫子（なでしこ） ／ 金水引（きんみずひき） ／ 九年母（くねんぼ） ／ 松虫草（まつむしそう） ／ 背高泡立草（せいたかあわだちそう） ／ 山梨の実（やまなしのみ） ／ 箒木（ほうきぎ） ／ 藪茗荷の花（やぶみょうがなのはな） ／ サルビア（さるびあ） ／ 鵯上戸の花（ひよどりじょうごのはな） ／ 水葵（みずあおい） ／ 梅鉢草（うめばちそう） ／ 水金梅（みずきんばい）</p>
-                    <h4>仲秋の植物</h4>
-                    <p>藍の花（あいのはな） ／ 秋茄子（あきなす） ／ 通草（あけび） ／ 蘆の花（あしのはな） ／ 無花果（いちじく） ／ 藤豆（ふじまめ） ／ 薄紅葉（うすもみじ） ／ 早稲（わせ） ／ 白粉花（おしろいばな） ／ 貝割菜（かいわりな） ／ 南瓜（かぼちゃ） ／ 刈萱（かるかや） ／ 黍（きび） ／ 山梔子（くちなし） ／ コスモス（こすもす） ／ 胡麻（ごま） ／ 桜紅葉（さくらもみじ） ／ 石榴（ざくろ） ／ 甘藷（さつまいも） ／ 紫苑（しおん） ／ 紫蘇の実（しそのみ） ／ 芋茎（ずいき） ／ 竹の春（たけのはる） ／ 玉蜀黍（とうもろこし） ／ 鳥兜（とりかぶと） ／ 南蛮煙管（なんばんぎせる） ／ 蔓茘枝（つるれいし） ／ 蓮の実（はすのみ） ／ 初紅葉（はつもみじ） ／ 稗（ひえ） ／ 葡萄（ぶどう） ／ 木瓜の実（ぼけのみ） ／ 杜鵑草（ほととぎす） ／ 真菰の花（まこものはな） ／ 猿梨の実（さるなしのみ） ／ 彼岸花（ひがんばな） ／ 水草紅葉（みずくさもみじ） ／ 水引の花（みずひきのはな） ／ 柳散る（やなぎちる） ／ 山葡萄（やまぶどう） ／ 竜胆（りんどう） ／ 棉（わた） ／ 秋薔薇（あきばら） ／ 菊芋（きくいも） ／ 秋明菊（しゅうめいぎく） ／ 嫁菜の花（よめなのはな） ／ 三七の花（さんしちのはな） ／ 蘭（らん） ／ 車前草（おおばこ） ／ 竹の実（たけのみ） ／ 浜菊（はまぎく） ／ 木賊（とくさ） ／ 千振（せんぶり） ／ 豨薟（めなもみ） ／ 緑豆（りょくとう） ／ 田五加木（たうこぎ） ／ 藜の実（あかざのみ） ／ 茴香の実（ういきょうのみ） ／ 刈安（かりやす） ／ 鍾馗蘭（しょうきらん） ／ 風船葛（ふうせんかずら） ／ 磯菊（いそぎく） ／ 苦参（くらら） ／ 芙蓉の実（ふようのみ） ／ 荒地野菊（あれちのぎく） ／ 衝羽根（つくばね） ／ 狗酸漿（いぬほおずき） ／ 独活の実（うどのみ） ／ 粟奴（くろんぼう） ／ 小浜菊（こはまぎく） ／ 小鮒草（こぶなぐさ） ／ 蘇枋の実（すおうのみ） ／ 中抜大根（なかぬきだいこん） ／ 茯苓（ぶくりょう） ／ 山薊（やまあざみ） ／ 八朔梅（はっさくばい） ／ 破荷（やれはす） ／ 野菊（のぎく） ／ 吾亦紅（われもこう）</p>
-                    <h4>晩秋の植物</h4>
-                    <p>一位の実（いちいのみ） ／ 銀杏散る（いちょうちる） ／ 銀杏黄葉（いちょうもみじ） ／ 稲（いね） ／ 茨の実（いばらのみ） ／ 色変えぬ松（いろかえぬまつ） ／ 梅擬（うめもどき） ／ 末枯れ（うらがれ） ／ 蝦蔓（えびづる） ／ 楝の実（おうちのみ） ／ 晩稲（おくて） ／ 落穂（おちぼ） ／ 万年青の実（おもとのみ） ／ 柿（かき） ／ 樫の実（かしのみ） ／ 榧の実（かやのみ） ／ 烏瓜（からすうり） ／ 榠櫨の実（かりんのみ） ／ 茸（きのこ） ／ 金柑（きんかん） ／ 枸杞の実（くこのみ） ／ 茱萸（ぐみ） ／ 栗（くり） ／ 胡桃（くるみ） ／ 柑子蜜柑（こうじみかん） ／ 黄葉（こうよう） ／ 黄落（こうらく） ／ 木の実（このみ） ／ 皀角子（さいかち） ／ サフラン（さふらん） ／ 残菊（ざんぎく） ／ 椎の実（しいのみ） ／ 草木瓜の実（くさぼけのみ） ／ 占地（しめじ） ／ 熟柿（じゅくし） ／ 新松子（しんちぢり） ／ 杉の実（すぎのみ） ／ 酸橘（すだち） ／ 橙（だいだい） ／ 橘（たちばな） ／ 大毛蓼（おおけたで） ／ 種茄子（たねなす） ／ 百菊（ひゃくぎく） ／ 蔓梅擬（つるうめもどき） ／ 照葉（てりは） ／ 橡の実（とちのみ） ／ 団栗（どんぐり） ／ 櫨の実（はぜのみ） ／ 櫨（はぜのき） ／ 隼人瓜（はやとうり） ／ 菱の実（ひしのみ） ／ 穭（ひつじ） ／ 瓢の実（ひょんのみ） ／ ピラカンサの実（ぴらかんさのみ） ／ 五倍子（ふし） ／ 藤の実（ふじのみ） ／ 菩提子（ぼだいし） ／ 松茸（まつたけ） ／ 檀の実（まゆみのみ） ／ 見せばや（みせばや） ／ 椋の実（むくのみ） ／ 無患子（むくろじ） ／ 紫式部（むらさきしきぶ） ／ 木犀（もくせい） ／ 紅葉（もみじ） ／ 雑木紅葉（ぞうきもみじ） ／ 柿紅葉（かきもみじ） ／ 漆紅葉（うるしもみじ） ／ 櫟紅葉（くぬぎもみじ） ／ 梅紅葉（うめもみじ） ／ 葡萄紅葉（ぶどうもみじ） ／ 満天星紅葉（どうだんもみじ） ／ 合歓紅葉（ねむもみじ） ／ 柞紅葉（ははそもみじ） ／ 櫨紅葉（はぜもみじ） ／ 紅葉かつ散る（もみじかつちる） ／ 破れ芭蕉（やぶればしょう） ／ 柚子（ゆず） ／ 一才柚子（いっさいゆず） ／ 落花生（らっかせい） ／ 林檎（りんご） ／ 檸檬（れもん） ／ 珊瑚樹（さんごじゅ） ／ 枳梖（けんぽなし） ／ 厚岸草（あっけしそう） ／ 吉祥草（きちじょうそう） ／ 枸橘の実（からたちのみ） ／ 飯桐の実（いいぎりのみ） ／ 岩茸（いわたけ） ／ 水木の実（みずきのみ） ／ 漆の実（うるしのみ） ／ 榲dule（まるめる） ／ 浜木綿の実（はまゆうのみ） ／ 榛の実（はしばみのみ） ／ 栗茸（くりたけ） ／ 合歓の実（ねむのみ） ／ オリーブの実（おりーぶのみ） ／ 定家葛（ていかかずら） ／ 楢の実（ならのみ） ／ 油桐の実（あぶらぎりのみ） ／ 楓（かえで） ／ 柾の実（まさきのみ） ／ 朴の実（ほおのみ） ／ 火焔菜（かえんさい） ／ 莢蒾の実（がまずみのみ） ／ 柏黄葉（かしわもみじ） ／ 木豇豆（きささげ） ／ 玉水木（たまみずき） ／ 初滑子（はつなめこ） ／ 榎の実（えのきのみ） ／ 辣韮の花（らっきょうのはな） ／ 鵯上戸（ひよどりじょうご） ／ 名の木散る（なのきちる） ／ 黐の実（もちのみ） ／ 信濃柿（しなのがき） ／ 海桐の実（とべらのみ） ／ 山梨（やまなし） ／ 梧桐の実（あおぎりのみ） ／ 一位樫の実（いちいがしのみ） ／ 黄烏瓜（きからすうり） ／ 樟の実（くすのみ） ／ 朱欒（ざぼん） ／ 芒散る（すすきちる） ／ 苗代茱萸の花（なわしろぐみのはな） ／ 萩の実（はぎのみ） ／ 榲めろ（まるめろ） ／ 早生蜜柑（わせみかん） ／ 風草（かぜくさ） ／ 箒木の実（ほうきぎのみ） ／ 舞茸（まいたけ） ／ 錦木（にしきぎ） ／ 白膠木（ぬるで） ／ 朝顔の実（あSがおのみ） ／ 藪茗荷の実（やぶみょうがなのみ） ／ 射干の実（ひおうぎのみ）</p>
-                `;
-                
-                document.getElementById('kigoListContainer').innerHTML = kigoHtml;
-                openModal(kigoModal);
-            });
-            haikuModal.addEventListener('click', (e) => { if(e.target === haikuModal) { closeModal(haikuModal); currentSpotId = null; setTimeout(clearHaikuInputs, 300); }});
-            kigoModal.addEventListener('click', (e) => { if(e.target === kigoModal) { closeModal(kigoModal); }});
-
-        }); // window.addEventListener('load')
-    </script>
-</body>
-</html>
+            "h":    { pos: [ 2164, 1925 ], name
